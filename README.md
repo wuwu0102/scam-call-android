@@ -68,6 +68,15 @@ gradle assembleDebug
 - 本地：`app/build/outputs/apk/debug/app-debug.apk`
 - CI Artifact：`app-debug-apk`
 
+
+### Phase 1（可測試版本）
+- App 首頁顯示：`Alerta Número MX`、資料筆數、最後更新時間、手動更新按鈕。
+- App 會從 GitHub Pages / GitHub raw JSON 下載 scam database（含 fallback URL 與 retry）。
+- 支援手動輸入電話並查詢結果：`Seguro / Sospechoso / No encontrado`。
+- 電話格式比對支援：`+52`、`52`、10 位墨西哥號碼，並自動清理空格 / 括號 / 橫線。
+- API 失敗時不會 crash，會在畫面顯示錯誤訊息。
+- 已保留後續擴充 Room local cache 的資料層結構。
+
 ## Roadmap
 
 ### Phase 1
