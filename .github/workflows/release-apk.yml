@@ -1,12 +1,10 @@
-name: Android Build
+name: Release APK Build
 
 on:
-  push:
-    branches: ["**"]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-release-apk:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,18 +21,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Gradle build
-        run: gradle build
+      - name: Build release APK
+        run: gradle assembleRelease
 
-      - name: Lint
-        run: gradle lint
-
-      - name: Assemble Debug APK
-        run: gradle assembleDebug
-
-      - name: Upload debug APK artifact
+      - name: Upload release APK artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: AlertaNumeroMX-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: AlertaNumeroMX-release-apk
+          path: app/build/outputs/apk/release/*.apk
