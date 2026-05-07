@@ -45,15 +45,23 @@ scam-call-android/
 
 ## GitHub Actions 說明
 
-本專案包含 `android-build.yml`：
+本專案包含兩個 workflow：
 
-- 觸發時機：`push`、`pull_request`
-- 執行項目：
-  - `gradle build`
-  - `gradle lint`
-  - `gradle assembleDebug`
-- 成功後上傳 Debug APK Artifact
-- 任一階段失敗即標記 workflow failed（PR 需通過檢查才可 merge）
+1. `android-build.yml`（CI）
+   - 觸發時機：`push`、`pull_request`
+   - 執行項目：
+     - `gradle build`
+     - `gradle lint`
+     - `gradle assembleDebug`
+   - 成功後上傳 Debug APK Artifact：`AlertaNumeroMX-debug-apk`
+   - 任一階段失敗即標記 workflow failed（PR 需通過檢查才可 merge）
+
+2. `release-apk.yml`（手動 Release APK Build）
+   - 觸發時機：`workflow_dispatch`（手動執行）
+   - 執行項目：
+     - `gradle assembleRelease`
+   - 成功後上傳 Release APK Artifact：`AlertaNumeroMX-release-apk`
+   - 不包含簽名金鑰，不進行 Play Store 發佈
 
 ## Build 方法
 
@@ -65,8 +73,43 @@ gradle assembleDebug
 
 ## APK 輸出位置
 
-- 本地：`app/build/outputs/apk/debug/app-debug.apk`
-- CI Artifact：`app-debug-apk`
+- Debug APK（本地）：`app/build/outputs/apk/debug/app-debug.apk`
+- Release APK（本地）：`app/build/outputs/apk/release/`
+- CI Artifact（Debug）：`AlertaNumeroMX-debug-apk`
+- CI Artifact（Release）：`AlertaNumeroMX-release-apk`
+
+## 如何下載 APK（GitHub Actions Artifact）
+
+1. 進入 GitHub Repo 的 **Actions** 頁面。
+2. 選擇 workflow：
+   - Debug：`Android Build`
+   - Release：`Release APK Build`
+3. 點選成功的 workflow run。
+4. 在頁面下方 **Artifacts** 區塊下載：
+   - `AlertaNumeroMX-debug-apk` 或
+   - `AlertaNumeroMX-release-apk`
+
+## 如何測試 Android App
+
+### 本地測試（Android Studio）
+
+1. 開啟專案並完成 Gradle Sync。
+2. 執行 `app` 到模擬器或實機。
+3. 測試基本流程：
+   - 首頁載入
+   - 手動查詢號碼
+   - 更新資料按鈕
+
+### CLI 測試命令
+
+```bash
+./gradlew build
+./gradlew assembleDebug
+```
+
+### 安裝 APK 測試（可選）
+
+可將下載的 debug APK 安裝到測試裝置進行驗證。
 
 
 ### Phase 1（可測試版本）
