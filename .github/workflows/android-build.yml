@@ -23,18 +23,39 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Ensure Gradle wrapper executable (if present)
+        run: |
+          if [ -f ./gradlew ]; then
+            chmod +x ./gradlew
+          fi
+
       - name: Gradle build
-        run: gradle build
+        run: |
+          if [ -f ./gradlew ]; then
+            ./gradlew build
+          else
+            gradle build
+          fi
 
       - name: Lint
-        run: gradle lint
+        run: |
+          if [ -f ./gradlew ]; then
+            ./gradlew lint
+          else
+            gradle lint
+          fi
 
       - name: Assemble Debug APK
-        run: gradle assembleDebug
+        run: |
+          if [ -f ./gradlew ]; then
+            ./gradlew assembleDebug
+          else
+            gradle assembleDebug
+          fi
 
       - name: Upload debug APK artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: AlertaNumeroMX-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/*.apk

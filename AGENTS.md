@@ -7,12 +7,16 @@
 - 不直接刪除功能
 - 優先 patch
 - 保持向下相容
+- 所有 AI / Codex 修改必須以小步 PR 進行
 
 禁止：
 - 大規模重構
 - 任意更換架構
 - 任意升級 major dependency
 - 任意改 package name（固定為 `com.alertanumero.mx`）
+- 直接 force push `main`
+- 移除既有 GitHub Actions
+- 移除安全、隱私、資料來源 fallback 機制
 
 ## UI Rules
 
@@ -20,7 +24,7 @@
 - 必須 mobile-first
 - 必須支援 dark mode
 - 必須避免文字超出
-- 必須適合西班牙文長字串
+- 必須適合西班牙文長字串（不可爆版）
 
 ## Data & Networking Rules
 
@@ -29,6 +33,8 @@
 - API fail 不可 crash
 - 必須有 timeout
 - 必須有 retry
+- database fetch 必須有 fallback / error message
+- caller ID / 電話號碼比對不得上傳私人通話紀錄
 
 ## Git & Change Management
 
@@ -36,6 +42,18 @@
 - 必須可 rollback
 - commit message 必須清楚
 - 不可直接 force push main
+
+所有功能修改必須通過：
+- `./gradlew build`
+- `./gradlew lint`
+- `./gradlew assembleDebug`
+
+每次 PR 必須說明：
+1. 修改目的
+2. 修改檔案
+3. 測試結果
+4. 是否影響現有功能
+5. rollback 方法
 
 ## GitHub Actions
 

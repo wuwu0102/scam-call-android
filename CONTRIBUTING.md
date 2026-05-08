@@ -25,3 +25,12 @@
 
 - `chore: scaffold Android MVVM baseline`
 - `feat: add phase1 search input state`
+
+## PR Governance (Required)
+
+- 每個功能使用獨立 branch。
+- 每個 PR 只能處理一個主題。
+- PR 必須附上測試結果（至少包含 `./gradlew build`、`./gradlew lint`、`./gradlew assembleDebug`）。
+- `main` 永遠保持可 build。
+- AI 產生的程式碼必須經 GitHub Actions 驗證後才能合併。
+- 嚴禁將 secret / API key / keystore commit 進 repo。

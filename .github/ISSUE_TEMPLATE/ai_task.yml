@@ -1,0 +1,44 @@
+name: AI task
+description: 定義 AI/Codex 任務邊界與驗收
+title: "[AI Task] "
+labels:
+  - ai-task
+body:
+  - type: textarea
+    id: ai_goal
+    attributes:
+      label: AI 任務目標
+    validations:
+      required: true
+  - type: textarea
+    id: forbidden_scope
+    attributes:
+      label: 不可修改範圍
+      description: 例如 package name、production secrets、外部 repo。
+    validations:
+      required: true
+  - type: textarea
+    id: allowed_scope
+    attributes:
+      label: 允許修改範圍
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: 驗收標準
+    validations:
+      required: true
+  - type: textarea
+    id: test_commands
+    attributes:
+      label: 測試指令
+      description: 請填寫必跑命令（例如 ./gradlew build lint assembleDebug）。
+    validations:
+      required: true
+  - type: textarea
+    id: rollback_conditions
+    attributes:
+      label: rollback 條件
+    validations:
+      required: true

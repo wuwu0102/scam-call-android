@@ -1,0 +1,59 @@
+name: Bug report
+description: 回報問題與重現資訊
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: problem_description
+    attributes:
+      label: 問題描述
+    validations:
+      required: true
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: 重現步驟
+      description: 請提供可重現問題的步驟。
+    validations:
+      required: true
+  - type: textarea
+    id: expected_result
+    attributes:
+      label: 預期結果
+    validations:
+      required: true
+  - type: textarea
+    id: actual_result
+    attributes:
+      label: 實際結果
+    validations:
+      required: true
+  - type: input
+    id: android_version
+    attributes:
+      label: Android 版本
+      placeholder: 例如 Android 14
+    validations:
+      required: true
+  - type: input
+    id: device_model
+    attributes:
+      label: 裝置型號
+      placeholder: 例如 Pixel 7
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 截圖
+      description: 可貼上圖片連結或拖曳圖片。
+  - type: dropdown
+    id: production_impact
+    attributes:
+      label: 是否影響正式功能
+      options:
+        - 是，影響正式功能
+        - 否，不影響正式功能
+    validations:
+      required: true
