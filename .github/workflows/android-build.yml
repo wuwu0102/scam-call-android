@@ -24,17 +24,17 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Gradle build
-        run: gradle build
+        run: ./gradlew build
 
       - name: Lint
-        run: gradle lint
+        run: ./gradlew lint
 
       - name: Assemble Debug APK
-        run: gradle assembleDebug
+        run: ./gradlew assembleDebug
 
       - name: Upload debug APK artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: AlertaNumeroMX-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/*.apk

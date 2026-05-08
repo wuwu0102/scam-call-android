@@ -1,0 +1,53 @@
+name: Feature request
+description: 提出新功能需求
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: feature_goal
+    attributes:
+      label: 功能目的
+    validations:
+      required: true
+  - type: textarea
+    id: user_scenario
+    attributes:
+      label: 使用者情境
+    validations:
+      required: true
+  - type: textarea
+    id: ui_requirement
+    attributes:
+      label: UI 需求
+      description: 請說明 mobile-first / dark mode / 西文長字串需求。
+    validations:
+      required: true
+  - type: dropdown
+    id: need_api
+    attributes:
+      label: 是否需要 API
+      options:
+        - 需要
+        - 不需要
+    validations:
+      required: true
+  - type: dropdown
+    id: need_local_db
+    attributes:
+      label: 是否需要本地資料庫
+      options:
+        - 需要
+        - 不需要
+    validations:
+      required: true
+  - type: dropdown
+    id: risk_level
+    attributes:
+      label: 風險等級
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true

@@ -138,3 +138,70 @@ gradle assembleDebug
 - Firebase
 - 社群回報與雲端同步
 - AI 風險分析
+
+## AI Development Workflow
+
+- AI/Codex 變更必須使用小步 PR（single-topic, rollback-friendly）。
+- 嚴禁大規模重構、嚴禁修改 package name `com.alertanumero.mx`。
+- 功能變更必須通過：
+  - `./gradlew build`
+  - `./gradlew lint`
+  - `./gradlew assembleDebug`
+- 不可移除安全、隱私、fallback 保護。
+
+## Branch Protection Recommendation
+
+請在 GitHub 網頁手動設定：
+`Settings → Branches → Add rule`
+
+建議啟用：
+- Require pull request before merging
+- Require status checks to pass before merging
+- Require branches to be up to date before merging
+
+此設定可確保狀態檢查（例如 build/lint）通過後才可 merge，避免壞掉的 PR 進入 `main`。
+
+## How to Download Debug APK
+
+1. 進入 **Actions**。
+2. 開啟 `Android Build` 的成功 workflow run。
+3. 在 **Artifacts** 下載 `AlertaNumeroMX-debug-apk`。
+
+## How to Run Manual Release APK Workflow
+
+1. 進入 **Actions**。
+2. 選擇 `Release APK Build` workflow。
+3. 點擊 **Run workflow**（`workflow_dispatch`）。
+4. 成功後在 **Artifacts** 下載 `AlertaNumeroMX-release-apk`。
+
+> 注意：目前不包含 signing keystore，不會發佈 Play Store。產出為 unsigned release APK（位於 `app/build/outputs/apk/release/*.apk`）。
+
+## PR Rules
+
+每個 PR 必須包含：
+1. 修改目的
+2. 修改檔案
+3. 測試結果
+4. 是否影響現有功能
+5. rollback 方法
+
+另外每個 PR 僅允許一個主題，並附上 CI 結果。
+
+## Issue Templates
+
+已新增：
+- `bug_report.yml`
+- `feature_request.yml`
+- `ai_task.yml`
+
+可用來強制收集重現資訊、需求邊界、風險等級與驗收條件。
+
+## ADR 文件說明
+
+已新增 `docs/adr`：
+- `0001-independent-android-repo.md`
+- `0002-github-pages-shared-database.md`
+- `0003-phase-1-no-firebase.md`
+- `0004-ai-guardrails-and-small-prs.md`
+
+用於記錄重要架構決策與 AI 治理準則，避免後續協作出現方向漂移。
