@@ -59,7 +59,7 @@ scam-call-android/
 2. `release-apk.yml`（手動 Release APK Build）
    - 觸發時機：`workflow_dispatch`（手動執行）
    - 執行項目：
-     - `gradle assembleRelease`
+     - `gradle assembleDebug`
    - 成功後上傳 Release APK Artifact：`AlertaNumeroMX-release-apk`
    - 不包含簽名金鑰，不進行 Play Store 發佈
 
@@ -174,7 +174,7 @@ gradle assembleDebug
 3. 點擊 **Run workflow**（`workflow_dispatch`）。
 4. 成功後在 **Artifacts** 下載 `AlertaNumeroMX-release-apk`。
 
-> 注意：目前不包含 signing keystore，不會發佈 Play Store。產出為 unsigned release APK（位於 `app/build/outputs/apk/release/*.apk`）。
+> 注意：目前不包含 signing keystore，不會發佈 Play Store。手動 Release workflow 先產出 debug APK 並統一上傳 `app/build/outputs/apk/**/*.apk`。
 
 ## PR Rules
 

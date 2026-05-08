@@ -30,10 +30,17 @@ body:
     validations:
       required: true
   - type: input
-    id: device_android_version
+    id: android_version
     attributes:
-      label: 裝置 / Android 版本
-      placeholder: 例如 Pixel 7 / Android 14
+      label: Android 版本
+      placeholder: 例如 Android 14
+    validations:
+      required: true
+  - type: input
+    id: device_model
+    attributes:
+      label: 裝置型號
+      placeholder: 例如 Pixel 7
     validations:
       required: true
   - type: textarea
