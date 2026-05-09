@@ -1,6 +1,10 @@
 package com.alertanumero.mx.ui
 
 import android.app.Application
+import android.app.role.RoleManager
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.alertanumero.mx.data.repository.FetchResult
@@ -13,6 +17,13 @@ import kotlinx.coroutines.launch
 
 enum class QueryStatus { SEGURO, SOSPECHOSO, NO_ENCONTRADO }
 
+data class ActivationUiState(
+    val supported: Boolean = false,
+    val isActive: Boolean = false,
+    val statusText: String = "Activación requerida",
+    val detailText: String = "Verifica permisos de llamada e identificación en tu dispositivo."
+)
+
 data class MainUiState(
     val title: String = "Alerta Número MX",
     val recordCount: Int = 0,
@@ -24,7 +35,8 @@ data class MainUiState(
     val statusMessage: String = "Listo para actualizar base de datos.",
     val sourceUrl: String = "",
     val localTestInput: String = "",
-    val localTestMessage: String = ""
+    val localTestMessage: String = "",
+    val activation: ActivationUiState = ActivationUiState()
 )
 
 class MainViewModel(
@@ -41,6 +53,7 @@ class MainViewModel(
 
     init {
         cleanupExpiredLocalTestNumber()
+        refreshActivationStatus()
         refreshDatabase()
     }
 
@@ -52,11 +65,11 @@ class MainViewModel(
         _uiState.update { it.copy(localTestInput = value) }
     }
 
-    fun saveLocalTestNumber() {
+    fun saveLocalTestNumber(): Boolean {
         val normalized = repository.normalizePhone(_uiState.value.localTestInput)
         if (normalized == null) {
             _uiState.update { it.copy(localTestMessage = "Ingresa un número válido de 10 dígitos en México.") }
-            return
+            return false
         }
 
         val expiry = System.currentTimeMillis() + 24L * 60L * 60L * 1000L
@@ -71,6 +84,7 @@ class MainViewModel(
                 localTestMessage = "Número de prueba guardado localmente por 24 horas."
             )
         }
+        return true
     }
 
     private fun cleanupExpiredLocalTestNumber() {
@@ -86,6 +100,53 @@ class MainViewModel(
         val expiry = prefs.getLong(localExpiryKey, 0L)
         if (expiry <= 0L || System.currentTimeMillis() > expiry) return null
         return prefs.getString(localNumberKey, null)
+    }
+
+    fun refreshActivationStatus() {
+        val context = getApplication<Application>()
+        val roleManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            context.getSystemService(RoleManager::class.java)
+        } else {
+            null
+        }
+
+        val isRoleSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            roleManager?.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) == true
+        val isRoleHeld = isRoleSupported && roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true
+
+        val activationState = when {
+            isRoleHeld -> ActivationUiState(
+                supported = true,
+                isActive = true,
+                statusText = "Protección activa",
+                detailText = "El rol de identificación/filtro de llamadas está activo en este dispositivo."
+            )
+            isRoleSupported -> ActivationUiState(
+                supported = true,
+                isActive = false,
+                statusText = "Activación requerida",
+                detailText = "Este Android permite rol de filtro, pero aún no está activado para la app."
+            )
+            else -> ActivationUiState(
+                supported = false,
+                isActive = false,
+                statusText = "Activación requerida",
+                detailText = "La detección automática puede variar según Android, fabricante y app de Teléfono."
+            )
+        }
+        _uiState.update { it.copy(activation = activationState) }
+    }
+
+    fun roleSettingsIntent(): Intent? {
+        val context = getApplication<Application>()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+        val roleManager = context.getSystemService(RoleManager::class.java) ?: return null
+        if (!roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) return null
+        return roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
+    }
+
+    fun appDetailsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        data = android.net.Uri.fromParts("package", getApplication<Application>().packageName, null)
     }
 
     fun refreshDatabase() {
