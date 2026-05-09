@@ -69,7 +69,7 @@ class ScamRepository {
                 }
             }
         }
-        FetchResult.Error("No se pudo actualizar la base de datos: $lastError")
+        FetchResult.Error("No se pudo actualizar la base de datos. Revisa tu conexión.")
     }
 
     private fun parseSnapshot(raw: String, sourceUrl: String): ScamDatabaseSnapshot {

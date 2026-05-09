@@ -42,27 +42,36 @@ class MainViewModel(
     fun refreshDatabase() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, statusMessage = "Actualizando datos...") }
-            when (val result = repository.fetchDatabase()) {
-                is FetchResult.Success -> {
-                    cachedNumbers = result.snapshot.numbers
-                    _uiState.update {
-                        it.copy(
-                            recordCount = result.snapshot.totalCount,
-                            lastUpdated = result.snapshot.updatedAt,
-                            statusMessage = "Base de datos actualizada correctamente.",
-                            isLoading = false,
-                            sourceUrl = result.snapshot.sourceUrl
-                        )
+            try {
+                when (val result = repository.fetchDatabase()) {
+                    is FetchResult.Success -> {
+                        cachedNumbers = result.snapshot.numbers
+                        _uiState.update {
+                            it.copy(
+                                recordCount = result.snapshot.totalCount,
+                                lastUpdated = result.snapshot.updatedAt,
+                                statusMessage = "Base de datos actualizada correctamente.",
+                                isLoading = false,
+                                sourceUrl = result.snapshot.sourceUrl
+                            )
+                        }
+                    }
+
+                    is FetchResult.Error -> {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                statusMessage = result.message
+                            )
+                        }
                     }
                 }
-
-                is FetchResult.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            statusMessage = result.message
-                        )
-                    }
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        statusMessage = "No se pudo actualizar la base de datos. Revisa tu conexión."
+                    )
                 }
             }
         }
