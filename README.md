@@ -120,6 +120,16 @@ gradle assembleDebug
 - API 失敗時不會 crash，會在畫面顯示錯誤訊息。
 - 已保留後續擴充 Room local cache 的資料層結構。
 
+
+## Android UI aligned with iOS design
+
+Main screen now follows the ScamCall MX iOS visual direction while keeping Android Material 3 and existing data/repository logic unchanged:
+- white-first mobile layout with dark-mode support
+- large headline and bold hero text in Spanish
+- rounded light-gray card sections for status, database, search, and local test tool
+- black primary action style, clearer `Resultado` display, and softer error/status text inside cards
+- safe-area aware + scrollable layout for small screens (e.g. Pixel 10)
+
 ## Roadmap
 
 ### Phase 1
