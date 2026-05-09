@@ -155,7 +155,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    testNumbers.forEach { sample ->
+                    for (sample in testNumbers) {
                         Button(
                             onClick = {
                                 viewModel.onPhoneChanged(sample)
