@@ -32,8 +32,9 @@ class ScamRepository {
     }
 
     private val fallbackUrls = listOf(
-        "https://alertanumero.github.io/scam-call-database/scam-database-mx.json",
-        "https://raw.githubusercontent.com/alertanumero/scam-call-database/main/docs/scam-database-mx.json"
+        "https://wuwu0102.github.io/scam-call-database/scam-database-mx.json",
+        "https://raw.githubusercontent.com/wuwu0102/scam-call-database/main/scam-database-mx.json",
+        "https://raw.githubusercontent.com/wuwu0102/scam-call-database/main/docs/scam-database-mx.json"
     )
 
     private val service: ScamDatabaseService by lazy {
