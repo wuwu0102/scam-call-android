@@ -32,6 +32,7 @@ class ScamRepository {
     }
 
     private val fallbackUrls = listOf(
+        "https://raw.githubusercontent.com/wuwu0102/scam-call-database/main/scam_numbers.json",
         "https://raw.githubusercontent.com/wuwu0102/scam-call-database/main/data/ios_numbers.json",
         "https://raw.githubusercontent.com/wuwu0102/scam-call-database/main/data/mexico_seed_phone_numbers.json"
     )
