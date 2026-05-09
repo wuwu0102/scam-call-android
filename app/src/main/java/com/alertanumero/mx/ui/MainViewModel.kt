@@ -155,23 +155,27 @@ class MainViewModel(
         val packageName = context.packageName
         val roleIntent = roleSettingsIntent()
 
-        val candidates = buildList {
-            if (roleIntent != null) add(roleIntent)
-            add(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
-            add(Intent(Settings.ACTION_CALL_SCREENING_SETTINGS))
-            add(Intent(Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS))
-            add(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+        fun safeIntent(action: String, block: (Intent.() -> Unit)? = null): Intent? = runCatching {
+            Intent(action).apply { block?.invoke(this) }
+        }.getOrNull()
+
+        val candidates = listOfNotNull(
+            roleIntent,
+            safeIntent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
+            safeIntent("android.settings.CALL_SCREENING_SETTINGS"),
+            safeIntent(Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS),
+            safeIntent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS) {
                 data = Uri.fromParts("package", packageName, null)
-            })
-            add(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            },
+            safeIntent(Settings.ACTION_APP_NOTIFICATION_SETTINGS) {
                 putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-            })
-            add(Intent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS))
-            add(Intent(Settings.ACTION_SETTINGS))
-        }
+            },
+            safeIntent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS),
+            safeIntent(Settings.ACTION_SETTINGS)
+        )
 
         return candidates.filter { intent ->
-            intent.resolveActivity(context.packageManager) != null
+            runCatching { intent.resolveActivity(context.packageManager) != null }.getOrDefault(false)
         }
     }
 
