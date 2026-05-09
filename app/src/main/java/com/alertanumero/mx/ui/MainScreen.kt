@@ -32,7 +32,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val testNumbers = listOf("+52 55 1234 5678", "5512345678")
 
     Scaffold { innerPadding: PaddingValues ->
         LazyColumn(
@@ -146,27 +145,43 @@ fun MainScreen(viewModel: MainViewModel) {
                     }
                     Text("Resultado", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(resultText, style = MaterialTheme.typography.headlineSmall)
+                    if (uiState.querySource.isNotBlank()) {
+                        Text("Fuente", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                        Text(uiState.querySource, style = MaterialTheme.typography.bodyLarge)
+                    }
                 }
             }
 
             item {
-                InfoCard(title = "Herramienta local de prueba", subtitle = "Números de ejemplo") {
+                InfoCard(title = "Herramienta local de prueba", subtitle = "Solo en este dispositivo") {
                     Text(
-                        text = "Prueba rápida sin cambiar la lógica de datos.",
+                        text = "Guarda temporalmente un número en este teléfono para verificar la identificación de llamadas. No se sube ni se comparte. Se elimina automáticamente después de 24 horas.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    for (sample in testNumbers) {
-                        Button(
-                            onClick = {
-                                viewModel.onPhoneChanged(sample)
-                                viewModel.search()
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Probar $sample")
-                        }
+                    OutlinedTextField(
+                        value = uiState.localTestInput,
+                        onValueChange = viewModel::onLocalTestNumberChanged,
+                        label = { Text("Número de prueba") },
+                        placeholder = { Text("Ej. 525512345678") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Button(onClick = viewModel::saveLocalTestNumber, modifier = Modifier.fillMaxWidth()) {
+                        Text("Guardar prueba local")
                     }
+                    if (uiState.localTestMessage.isNotBlank()) {
+                        Text(
+                            text = uiState.localTestMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = "Para probar la identificación, llama a este teléfono desde otro dispositivo usando ese número.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
