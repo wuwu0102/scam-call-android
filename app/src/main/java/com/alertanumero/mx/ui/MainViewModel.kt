@@ -28,9 +28,9 @@ data class MainUiState(
 )
 
 class MainViewModel(
-    application: Application,
-    private val repository: ScamRepository = ScamRepository()
+    application: Application
 ) : AndroidViewModel(application) {
+    private val repository: ScamRepository = ScamRepository()
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
