@@ -3,6 +3,7 @@ package com.alertanumero.mx.ui
 import android.app.Application
 import android.app.role.RoleManager
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
@@ -146,7 +147,36 @@ class MainViewModel(
     }
 
     fun appDetailsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-        data = android.net.Uri.fromParts("package", getApplication<Application>().packageName, null)
+        data = Uri.fromParts("package", getApplication<Application>().packageName, null)
+    }
+
+    fun activationSettingsIntents(): List<Intent> {
+        val context = getApplication<Application>()
+        val packageName = context.packageName
+        val roleIntent = roleSettingsIntent()
+
+        fun safeIntent(action: String, block: (Intent.() -> Unit)? = null): Intent? = runCatching {
+            Intent(action).apply { block?.invoke(this) }
+        }.getOrNull()
+
+        val candidates = listOfNotNull(
+            roleIntent,
+            safeIntent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
+            safeIntent("android.settings.CALL_SCREENING_SETTINGS"),
+            safeIntent(Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS),
+            safeIntent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS) {
+                data = Uri.fromParts("package", packageName, null)
+            },
+            safeIntent(Settings.ACTION_APP_NOTIFICATION_SETTINGS) {
+                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            },
+            safeIntent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS),
+            safeIntent(Settings.ACTION_SETTINGS)
+        )
+
+        return candidates.filter { intent ->
+            runCatching { intent.resolveActivity(context.packageManager) != null }.getOrDefault(false)
+        }
     }
 
     fun refreshDatabase() {

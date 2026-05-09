@@ -1,6 +1,11 @@
 package com.alertanumero.mx.ui
 
-import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,13 +44,30 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var showActivationGuide by remember { mutableStateOf(false) }
     var showLocalSavedDialog by remember { mutableStateOf(false) }
 
-    fun launchIntent(intent: Intent?) {
-        if (intent == null) return
-        runCatching { context.startActivity(intent) }
+    val settingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.refreshActivationStatus()
+    }
+
+    fun openActivationSettings() {
+        val intents = viewModel.activationSettingsIntents()
+        intents.firstOrNull()?.let {
+            runCatching { settingsLauncher.launch(it) }
+                .onFailure { viewModel.refreshActivationStatus() }
+        } ?: viewModel.refreshActivationStatus()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshActivationStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Scaffold { innerPadding: PaddingValues ->
@@ -186,20 +207,18 @@ fun MainScreen(viewModel: MainViewModel) {
                         "3. Busca Alerta Número MX / ScamCall MX.\n" +
                         "4. Revisa permisos de Teléfono, ID de llamada o app predeterminada de llamadas (si aparece).\n" +
                         "5. Activa permisos o configura la app según lo permita tu dispositivo.\n\n" +
+                        "Android no permite activar esto automáticamente. Debes confirmarlo manualmente por seguridad.\n\n" +
                         "La ubicación exacta puede variar según la marca y versión de Android."
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    launchIntent(viewModel.roleSettingsIntent())
+                    openActivationSettings()
                     showActivationGuide = false
-                }) { Text("Intentar activar") }
+                }) { Text("Abrir configuración") }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    launchIntent(viewModel.appDetailsIntent())
-                    showActivationGuide = false
-                }) { Text("Abrir app") }
+                TextButton(onClick = { showActivationGuide = false }) { Text("Cerrar") }
             }
         )
     }
