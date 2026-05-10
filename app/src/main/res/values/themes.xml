@@ -1,8 +1,6 @@
 <resources>
     <style name="Theme.AlertaNumeroMX" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
     <style name="Theme.AlertaNumeroMX.CallerId" parent="Theme.AlertaNumeroMX">
-        <item name="android:showWhenLocked">true</item>
-        <item name="android:turnScreenOn">true</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>
     </style>
