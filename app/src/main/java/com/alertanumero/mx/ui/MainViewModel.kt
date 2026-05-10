@@ -116,10 +116,6 @@ class MainViewModel(
             context,
             Manifest.permission.READ_PHONE_STATE
         ) == PackageManager.PERMISSION_GRANTED
-        val callLogGranted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_CALL_LOG
-        ) == PackageManager.PERMISSION_GRANTED
         val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(
                 context,
@@ -132,11 +128,7 @@ class MainViewModel(
                 supported = true,
                 isActive = true,
                 statusText = "Activa",
-                detailText = if (callLogGranted) {
-                    "Protección activa. ScamCall MX mostrará alertas por notificación para llamadas sospechosas."
-                } else {
-                    "Protección activa. En algunos dispositivos Android, el número entrante puede no estar disponible por restricciones del sistema."
-                }
+                detailText = "Protección activa. En algunos dispositivos Android, el número entrante puede no estar disponible por restricciones del sistema."
             )
             else -> ActivationUiState(
                 supported = true,
