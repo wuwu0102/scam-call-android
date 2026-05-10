@@ -143,6 +143,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     Text(text = uiState.recordCount.toString(), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
                     Text(text = "registros", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(text = "Última actualización: ${uiState.lastUpdated}", style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(text = "Clasificación incluida: llamadas sospechosas, publicidad/telemarketing y cobranza.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Button(onClick = viewModel::refreshDatabase, enabled = !uiState.isLoading, modifier = Modifier.fillMaxWidth()) { Text("Actualizar ahora") }
                     if (uiState.isLoading) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -159,15 +160,28 @@ fun MainScreen(viewModel: MainViewModel) {
 
                     val resultText = when (uiState.queryResult) {
                         QueryStatus.SEGURO -> "Seguro"
-                        QueryStatus.SOSPECHOSO -> "Sospechoso"
+                        QueryStatus.SOSPECHOSO -> uiState.queryCategory?.displayLabel ?: "Sospechoso"
                         QueryStatus.NO_ENCONTRADO -> "Desconocido"
                         null -> "-"
                     }
                     Text("Resultado", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(resultText, style = MaterialTheme.typography.headlineSmall)
-                    if (uiState.querySource.isNotBlank()) {
-                        Text("Fuente", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                        Text(uiState.querySource, style = MaterialTheme.typography.bodyLarge)
+                    if (uiState.queryResult == QueryStatus.SOSPECHOSO && uiState.queryCategory != null) {
+                        Text("Tipo: ${uiState.queryCategory.shortLabel}", style = MaterialTheme.typography.bodyLarge)
+                        if (uiState.queryLabel.isNotBlank()) Text("Detalle: ${uiState.queryLabel}", style = MaterialTheme.typography.bodyMedium)
+                        if (uiState.querySource.isNotBlank()) Text("Fuente: ${uiState.querySource}", style = MaterialTheme.typography.bodyMedium)
+                        if (uiState.querySourceDetail.isNotBlank()) Text("Origen: ${uiState.querySourceDetail}", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+
+
+            item {
+                InfoCard(title = "Reporte de compatibilidad", subtitle = "Ayuda a mejorar la detección en Android") {
+                    Text("Si las alertas no aparecen durante llamadas entrantes, genera este reporte y envíalo al desarrollador. No se sube automáticamente.", style = MaterialTheme.typography.bodySmall)
+                    Button(onClick = viewModel::generateCompatibilityReport, modifier = Modifier.fillMaxWidth()) { Text("Generar reporte") }
+                    if (uiState.compatibilityReport.isNotBlank()) {
+                        OutlinedTextField(value = uiState.compatibilityReport, onValueChange = {}, modifier = Modifier.fillMaxWidth(), readOnly = true, label = { Text("Reporte") })
                     }
                 }
             }

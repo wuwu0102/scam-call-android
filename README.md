@@ -215,3 +215,21 @@ Main screen now follows the ScamCall MX iOS visual direction while keeping Andro
 - `0004-ai-guardrails-and-small-prs.md`
 
 用於記錄重要架構決策與 AI 治理準則，避免後續協作出現方向漂移。
+
+### Database category support
+
+Android app supports categorized phone records:
+
+- suspicious → Llamada sospechosa
+- telemarketing → Publicidad / Telemarketing
+- collection → Cobranza
+
+The parser remains backward compatible with legacy JSON files, including number-only arrays and label-only records.
+
+### Android call alert compatibility
+
+This version uses a notification-based MVP and does not request READ_CALL_LOG.
+
+Some Android devices may not expose the incoming number to third-party apps through PHONE_STATE_CHANGED. When the number is unavailable, the app cannot match it against the local database and no call alert will be shown.
+
+Users can generate a local compatibility report in the app and send it to the developer. The report is not uploaded automatically.

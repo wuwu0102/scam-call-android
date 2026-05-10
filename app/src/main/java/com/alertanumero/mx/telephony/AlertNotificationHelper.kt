@@ -9,44 +9,46 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.alertanumero.mx.R
+import com.alertanumero.mx.data.repository.ScamCategory
+import com.alertanumero.mx.data.repository.ScamEntry
 
 class AlertNotificationHelper(private val context: Context) {
-    companion object {
-        const val CHANNEL_ID = "scam_call_alerts"
-    }
+    companion object { const val CHANNEL_ID = "scam_call_alerts" }
 
     fun ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Alertas de llamadas sospechosas",
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
+        val channel = NotificationChannel(CHANNEL_ID, "Alertas de llamadas sospechosas", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "Avisos cuando ScamCall MX detecta números sospechosos"
         }
-        val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(channel)
+        context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    fun showSuspiciousCallAlert(rawNumber: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return
+    fun showCallAlert(rawNumber: String, entry: ScamEntry) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        val title = when (entry.category) {
+            ScamCategory.SUSPICIOUS -> "⚠️ Llamada sospechosa detectada"
+            ScamCategory.TELEMARKETING -> "📢 Publicidad / Telemarketing"
+            ScamCategory.COLLECTION -> "💳 Cobranza detectada"
+        }
+        var bigText = when (entry.category) {
+            ScamCategory.SUSPICIOUS -> "ScamCall MX detectó un número reportado como llamada sospechosa: $rawNumber. Evita compartir datos personales."
+            ScamCategory.TELEMARKETING -> "ScamCall MX detectó un número reportado como publicidad o telemarketing: $rawNumber."
+            ScamCategory.COLLECTION -> "ScamCall MX detectó un número reportado como cobranza: $rawNumber. Verifica la identidad antes de compartir información."
+        }
+        if (entry.label.isNotBlank() && entry.label != entry.category.displayLabel) bigText += " Detalle: ${entry.label}"
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("⚠️ Llamada sospechosa detectada")
-            .setContentText("Número: $rawNumber. Evita compartir datos personales.")
-            .setStyle(
-                NotificationCompat.BigTextStyle().bigText(
-                    "ScamCall MX detectó un número reportado como sospechoso: $rawNumber. " +
-                        "Si no reconoces la llamada, cuelga y bloquea el número."
-                )
-            )
+            .setContentTitle(title)
+            .setContentText("Número: $rawNumber. Tipo: ${entry.category.displayLabel}.")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
-
         NotificationManagerCompat.from(context).notify(rawNumber.hashCode(), notification)
+    }
+
+    fun showSuspiciousCallAlert(rawNumber: String) {
+        showCallAlert(rawNumber, ScamEntry(rawNumber, ScamCategory.SUSPICIOUS, ScamCategory.SUSPICIOUS.displayLabel))
     }
 }

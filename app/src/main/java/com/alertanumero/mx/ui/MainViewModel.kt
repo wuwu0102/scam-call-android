@@ -11,6 +11,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.alertanumero.mx.data.repository.FetchResult
+import com.alertanumero.mx.data.repository.ScamCategory
+import com.alertanumero.mx.data.repository.ScamEntry
 import com.alertanumero.mx.data.repository.ScamRepository
 import com.alertanumero.mx.telephony.AlertNotificationHelper
 import com.alertanumero.mx.telephony.CallAlertStore
@@ -35,12 +37,16 @@ data class MainUiState(
     val lastUpdated: String = "N/A",
     val phoneInput: String = "",
     val queryResult: QueryStatus? = null,
+    val queryCategory: ScamCategory? = null,
+    val queryLabel: String = "",
     val querySource: String = "",
+    val querySourceDetail: String = "",
     val isLoading: Boolean = false,
     val statusMessage: String = "Listo para actualizar base de datos.",
     val sourceUrl: String = "",
     val localTestInput: String = "",
     val localTestMessage: String = "",
+    val compatibilityReport: String = "",
     val activation: ActivationUiState = ActivationUiState()
 )
 
@@ -51,7 +57,7 @@ class MainViewModel(
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
-    private var cachedNumbers: Set<String> = emptySet()
+    private var cachedEntries: Map<String, ScamEntry> = emptyMap()
     private val prefs = application.getSharedPreferences("local_test_tool", 0)
     private val callAlertStore = CallAlertStore(application)
     private val localNumberKey = "local_test_number"
@@ -178,13 +184,13 @@ class MainViewModel(
             try {
                 when (val result = repository.fetchDatabase()) {
                     is FetchResult.Success -> {
-                        cachedNumbers = result.snapshot.numbers
-                        callAlertStore.saveNumbers(cachedNumbers)
+                        cachedEntries = result.snapshot.entries
+                        callAlertStore.saveEntries(cachedEntries)
                         _uiState.update {
                             it.copy(
                                 recordCount = result.snapshot.totalCount,
                                 lastUpdated = result.snapshot.updatedAt,
-                                statusMessage = "Base de datos actualizada correctamente.",
+                                statusMessage = "Base de datos actualizada correctamente. Categorías: sospechosas, publicidad y cobranza.",
                                 isLoading = false,
                                 sourceUrl = result.snapshot.sourceUrl
                             )
@@ -213,20 +219,51 @@ class MainViewModel(
 
     fun search() {
         val normalized = repository.normalizePhone(_uiState.value.phoneInput)
-        val localTest = activeLocalTestNumber()
-        val result = when {
-            normalized == null -> QueryStatus.NO_ENCONTRADO
-            localTest != null && localTest == normalized -> QueryStatus.SOSPECHOSO
-            cachedNumbers.contains(normalized) -> QueryStatus.SOSPECHOSO
-            cachedNumbers.isEmpty() -> QueryStatus.NO_ENCONTRADO
-            else -> QueryStatus.SEGURO
+        val localEntry = if (normalized != null) callAlertStore.findLocalTestEntry(normalized) else null
+        val remoteEntry = if (normalized != null) cachedEntries[normalized] else null
+
+        _uiState.update {
+            when {
+                normalized == null -> it.copy(queryResult = QueryStatus.NO_ENCONTRADO, queryCategory = null, queryLabel = "", querySource = "", querySourceDetail = "")
+                localEntry != null -> it.copy(queryResult = QueryStatus.SOSPECHOSO, queryCategory = localEntry.category, queryLabel = localEntry.label, querySource = "prueba local", querySourceDetail = localEntry.source)
+                remoteEntry != null -> it.copy(queryResult = QueryStatus.SOSPECHOSO, queryCategory = remoteEntry.category, queryLabel = remoteEntry.label, querySource = "base de datos", querySourceDetail = remoteEntry.source)
+                cachedEntries.isEmpty() -> it.copy(queryResult = QueryStatus.NO_ENCONTRADO, queryCategory = null, queryLabel = "", querySource = "", querySourceDetail = "")
+                else -> it.copy(queryResult = QueryStatus.SEGURO, queryCategory = null, queryLabel = "", querySource = "", querySourceDetail = "")
+            }
         }
-        val source = when {
-            normalized == null -> ""
-            localTest != null && localTest == normalized -> "prueba local"
-            cachedNumbers.contains(normalized) -> "base de datos"
-            else -> ""
-        }
-        _uiState.update { it.copy(queryResult = result, querySource = source) }
     }
+
+    fun generateCompatibilityReport() {
+        val context = getApplication<Application>()
+        val phoneStateGranted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.READ_PHONE_STATE
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+        val report = """
+        ScamCall MX - Android compatibility report
+        Brand: ${Build.BRAND}
+        Manufacturer: ${Build.MANUFACTURER}
+        Model: ${Build.MODEL}
+        Device: ${Build.DEVICE}
+        Android SDK: ${Build.VERSION.SDK_INT}
+        Android release: ${Build.VERSION.RELEASE}
+        READ_PHONE_STATE granted: $phoneStateGranted
+        POST_NOTIFICATIONS granted: $notificationGranted
+        Database records: ${_uiState.value.recordCount}
+        Last update: ${_uiState.value.lastUpdated}
+        Alert mode: notification-based MVP
+        READ_CALL_LOG: not requested
+        CallScreeningService: not enabled
+    """.trimIndent()
+
+        _uiState.update { it.copy(compatibilityReport = report) }
+    }
+
 }

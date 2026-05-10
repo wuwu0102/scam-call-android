@@ -4,6 +4,11 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+This MVP intentionally does not request READ_CALL_LOG to avoid high-risk Google Play permission review.
+Incoming call alerts depend on whether the device exposes the incoming number through PHONE_STATE.
+-->
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
