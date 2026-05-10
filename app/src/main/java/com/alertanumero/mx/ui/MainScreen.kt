@@ -136,11 +136,47 @@ fun MainScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Role available: ${if (uiState.activation.roleAvailable) "yes" else "no"} · Default caller ID app: ${if (uiState.activation.roleHeld) "yes" else "no"}",
+                        text = "service declared: ${if (uiState.activation.serviceDeclared) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "service permission: ${uiState.activation.servicePermission}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "role held: ${if (uiState.activation.roleHeld) "yes" else "no"} · role available: ${if (uiState.activation.roleAvailable) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "component: ${uiState.activation.serviceComponentName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "package: ${uiState.activation.packageName} · app: ${uiState.activation.appLabel}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (uiState.activation.roleActiveButServiceNotInvoked) {
+                        Text(
+                            text = "CallScreening role is active, but Android has not invoked the service yet.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFEF6C00)
+                        )
+                    }
+                    Text(
+                        text = "En algunos dispositivos Pixel/Android, además del permiso de rol, debes verificar que ScamCall MX esté seleccionado como app de identificación de llamadas en Apps predeterminadas.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
@@ -170,6 +206,12 @@ fun MainScreen(viewModel: MainViewModel) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    Button(
+                        onClick = {
+                            settingsLauncher.launch(viewModel.manageDefaultAppsIntent())
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Abrir apps predeterminadas") }
                     Button(
                         onClick = viewModel::refreshRecentCallAlertEvents,
                         modifier = Modifier.fillMaxWidth()

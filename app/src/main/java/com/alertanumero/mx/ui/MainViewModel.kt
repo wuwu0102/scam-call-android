@@ -33,7 +33,13 @@ data class ActivationUiState(
     val detailText: String = "Verifica permisos de llamada e identificación en tu dispositivo.",
     val callScreeningActive: Boolean = false,
     val roleAvailable: Boolean = false,
-    val roleHeld: Boolean = false
+    val roleHeld: Boolean = false,
+    val serviceDeclared: Boolean = false,
+    val servicePermission: String = "",
+    val serviceComponentName: String = "",
+    val packageName: String = "",
+    val appLabel: String = "",
+    val roleActiveButServiceNotInvoked: Boolean = false
 )
 
 data class MainUiState(
@@ -139,10 +145,25 @@ class MainViewModel(
         val roleManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) context.getSystemService(RoleManager::class.java) else null
         val roleAvailable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) roleManager?.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) == true else false
         val roleHeld = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true else false
-        val callScreeningActive = roleAvailable && roleHeld
+        val serviceComponentName = "${context.packageName}/.telephony.ScamCallScreeningService"
+        val servicePermissionRequired = "android.permission.BIND_SCREENING_SERVICE"
+        val serviceIntent = Intent("android.telecom.CallScreeningService").setPackage(context.packageName)
+        val queriedServices = context.packageManager.queryIntentServices(serviceIntent, PackageManager.GET_META_DATA)
+        val declaredServiceInfo = queriedServices.firstOrNull { info ->
+            info.serviceInfo?.name == "com.alertanumero.mx.telephony.ScamCallScreeningService" ||
+                info.serviceInfo?.name?.endsWith(".ScamCallScreeningService") == true
+        }?.serviceInfo
+        val serviceDeclared = declaredServiceInfo != null
+        val roleActiveButServiceNotInvoked = roleHeld &&
+            CallAlertDiagnosticsStore(context)
+                .getRecentEvents()
+                .none { it.source == "CallScreeningService" }
+        val callScreeningActive = roleAvailable && roleHeld && serviceDeclared
         val active = phoneStateGranted && notificationGranted
+        val appLabel = context.packageManager.getApplicationLabel(context.applicationInfo).toString()
 
         val detailText = when {
+            roleActiveButServiceNotInvoked -> "CallScreening role is active, but Android has not invoked the service yet."
             callScreeningActive -> "Protección activa con identificación de llamadas."
             notificationGranted -> "Activa parcialmente. Para mejorar la detección, activa ScamCall MX como app de identificación y filtro de llamadas."
             else -> "Permite notificaciones y activa identificación de llamadas."
@@ -155,7 +176,13 @@ class MainViewModel(
             detailText = detailText,
             callScreeningActive = callScreeningActive,
             roleAvailable = roleAvailable,
-            roleHeld = roleHeld
+            roleHeld = roleHeld,
+            serviceDeclared = serviceDeclared,
+            servicePermission = declaredServiceInfo?.permission ?: servicePermissionRequired,
+            serviceComponentName = serviceComponentName,
+            packageName = context.packageName,
+            appLabel = appLabel,
+            roleActiveButServiceNotInvoked = roleActiveButServiceNotInvoked
         )
         _uiState.update { it.copy(activation = activationState) }
     }
@@ -203,6 +230,8 @@ class MainViewModel(
         helper.ensureChannel()
         helper.showDiagnosticCallSeen("TEST", "Manual test")
     }
+
+    fun manageDefaultAppsIntent(): Intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
 
     fun appDetailsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
         data = Uri.fromParts("package", getApplication<Application>().packageName, null)
