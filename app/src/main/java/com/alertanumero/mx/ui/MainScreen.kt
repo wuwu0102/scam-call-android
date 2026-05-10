@@ -166,8 +166,9 @@ fun MainScreen(viewModel: MainViewModel) {
                     }
                     Text("Resultado", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(resultText, style = MaterialTheme.typography.headlineSmall)
-                    if (uiState.queryResult == QueryStatus.SOSPECHOSO && uiState.queryCategory != null) {
-                        Text("Tipo: ${uiState.queryCategory.shortLabel}", style = MaterialTheme.typography.bodyLarge)
+                    val queryCategory = uiState.queryCategory
+                    if (uiState.queryResult == QueryStatus.SOSPECHOSO && queryCategory != null) {
+                        Text("Tipo: ${queryCategory.shortLabel}", style = MaterialTheme.typography.bodyLarge)
                         if (uiState.queryLabel.isNotBlank()) Text("Detalle: ${uiState.queryLabel}", style = MaterialTheme.typography.bodyMedium)
                         if (uiState.querySource.isNotBlank()) Text("Fuente: ${uiState.querySource}", style = MaterialTheme.typography.bodyMedium)
                         if (uiState.querySourceDetail.isNotBlank()) Text("Origen: ${uiState.querySourceDetail}", style = MaterialTheme.typography.bodyMedium)
