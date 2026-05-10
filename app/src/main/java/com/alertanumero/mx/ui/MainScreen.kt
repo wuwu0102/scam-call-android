@@ -130,6 +130,18 @@ fun MainScreen(viewModel: MainViewModel) {
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Text(
+                        text = "CallScreeningService: ${if (uiState.activation.callScreeningActive) "active" else "inactive"}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Role available: ${if (uiState.activation.roleAvailable) "yes" else "no"} · Default caller ID app: ${if (uiState.activation.roleHeld) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = {

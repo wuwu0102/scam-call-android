@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
+import com.alertanumero.mx.data.repository.ScamRepository
 
 class IncomingCallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -12,6 +13,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
         if (state != TelephonyManager.EXTRA_STATE_RINGING) return
 
         val incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
+        val normalizedNumber = ScamRepository().normalizePhone(incomingNumber.orEmpty()).orEmpty()
         val diagnosticsStore = CallAlertDiagnosticsStore(context)
         val callAlertStore = CallAlertStore(context)
 
@@ -25,6 +27,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
             diagnosticsStore.addEvent(
                 source = "PHONE_STATE_CHANGED",
                 rawNumber = "",
+                normalizedNumber = normalizedNumber,
                 matched = false,
                 reason = "missing_EXTRA_INCOMING_NUMBER"
             )
@@ -36,7 +39,9 @@ class IncomingCallReceiver : BroadcastReceiver() {
         diagnosticsStore.addEvent(
             source = "PHONE_STATE_CHANGED",
             rawNumber = incomingNumber,
+            normalizedNumber = normalizedNumber,
             matched = entry != null,
+            category = entry?.category?.name.orEmpty(),
             reason = if (entry != null) "matched" else "not_found"
         )
 

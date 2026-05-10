@@ -5,6 +5,7 @@ import android.telecom.CallScreeningService
 import android.telecom.CallScreeningService.CallResponse
 import android.telecom.PhoneAccount
 import android.util.Log
+import com.alertanumero.mx.data.repository.ScamRepository
 
 class ScamCallScreeningService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
@@ -26,11 +27,13 @@ class ScamCallScreeningService : CallScreeningService() {
             } else {
                 ""
             }
+            val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
 
             val diagnosticsStore = CallAlertDiagnosticsStore(this)
             diagnosticsStore.addEvent(
                 source = "CallScreeningService",
                 rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty(),
+                normalizedNumber = normalizedNumber,
                 matched = false,
                 reason = "onScreenCall_entered"
             )
@@ -45,6 +48,7 @@ class ScamCallScreeningService : CallScreeningService() {
                 diagnosticsStore.addEvent(
                     source = "CallScreeningService",
                     rawNumber = "",
+                    normalizedNumber = normalizedNumber,
                     matched = false,
                     reason = "empty_or_unavailable_number"
                 )
@@ -58,7 +62,9 @@ class ScamCallScreeningService : CallScreeningService() {
             diagnosticsStore.addEvent(
                 source = "CallScreeningService",
                 rawNumber = rawNumber,
+                normalizedNumber = normalizedNumber,
                 matched = entry != null,
+                category = entry?.category?.name.orEmpty(),
                 reason = if (entry != null) "matched" else "not_found"
             )
 

@@ -31,7 +31,9 @@ data class ActivationUiState(
     val isActive: Boolean = false,
     val statusText: String = "Activación requerida",
     val detailText: String = "Verifica permisos de llamada e identificación en tu dispositivo.",
-    val callScreeningActive: Boolean = false
+    val callScreeningActive: Boolean = false,
+    val roleAvailable: Boolean = false,
+    val roleHeld: Boolean = false
 )
 
 data class MainUiState(
@@ -134,12 +136,10 @@ class MainViewModel(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
-        val callScreeningActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = context.getSystemService(RoleManager::class.java)
-            roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true
-        } else {
-            false
-        }
+        val roleManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) context.getSystemService(RoleManager::class.java) else null
+        val roleAvailable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) roleManager?.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) == true else false
+        val roleHeld = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true else false
+        val callScreeningActive = roleAvailable && roleHeld
         val active = phoneStateGranted && notificationGranted
 
         val detailText = when {
@@ -153,7 +153,9 @@ class MainViewModel(
             isActive = active,
             statusText = if (active) "Activa" else "Activación requerida",
             detailText = detailText,
-            callScreeningActive = callScreeningActive
+            callScreeningActive = callScreeningActive,
+            roleAvailable = roleAvailable,
+            roleHeld = roleHeld
         )
         _uiState.update { it.copy(activation = activationState) }
     }
@@ -179,8 +181,10 @@ class MainViewModel(
         } else {
             events.joinToString("\n\n") { event ->
                 "Evento: ${event.source}\n" +
-                    "Número: ${event.rawNumber.ifBlank { "No disponible" }}\n" +
-                    "Resultado: ${if (event.matched) "Coincidió" else "No coincidió"}\n" +
+                    "Número (raw): ${event.rawNumber.ifBlank { "No disponible" }}\n" +
+                    "Número normalizado: ${event.normalizedNumber.ifBlank { "No disponible" }}\n" +
+                    "Resultado DB: ${if (event.matched) "Coincidió" else "No coincidió"}\n" +
+                    "Categoría: ${event.category.ifBlank { "N/A" }}\n" +
                     "Motivo: ${event.reason}\n" +
                     "Timestamp: ${event.timestamp}"
             }
