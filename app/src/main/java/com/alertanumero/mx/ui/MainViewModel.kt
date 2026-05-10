@@ -51,7 +51,9 @@ data class MainUiState(
     val localTestMessage: String = "",
     val compatibilityReport: String = "",
     val activation: ActivationUiState = ActivationUiState(),
-    val lastCallEventText: String = ""
+    val lastCallEventText: String = "",
+    val recentCallEventsText: String = "",
+    val diagnosticNotifyAllCalls: Boolean = false
 )
 
 class MainViewModel(
@@ -71,6 +73,7 @@ class MainViewModel(
         cleanupExpiredLocalTestNumber()
         AlertNotificationHelper(application).ensureChannel()
         refreshActivationStatus()
+        _uiState.update { it.copy(diagnosticNotifyAllCalls = callAlertStore.isDiagnosticNotifyAllCallsEnabled()) }
         refreshDatabase()
     }
 
@@ -169,17 +172,32 @@ class MainViewModel(
         }
     }
 
-    fun refreshLastCallAlertEvent() {
-        val event = CallAlertDiagnosticsStore(getApplication()).getLastEvent()
-        val text = if (event == null) {
+    fun refreshRecentCallAlertEvents() {
+        val events = CallAlertDiagnosticsStore(getApplication()).getRecentEvents()
+        val text = if (events.isEmpty()) {
             "Sin eventos de llamada registrados todavía."
         } else {
-            "Último evento: ${event.source}\n" +
-                "Número: ${event.rawNumber.ifBlank { "No disponible" }}\n" +
-                "Resultado: ${if (event.matched) "Coincidió" else "No coincidió"}\n" +
-                "Motivo: ${event.reason}"
+            events.joinToString("\n\n") { event ->
+                "Evento: ${event.source}\n" +
+                    "Número: ${event.rawNumber.ifBlank { "No disponible" }}\n" +
+                    "Resultado: ${if (event.matched) "Coincidió" else "No coincidió"}\n" +
+                    "Motivo: ${event.reason}\n" +
+                    "Timestamp: ${event.timestamp}"
+            }
         }
-        _uiState.update { it.copy(lastCallEventText = text) }
+        _uiState.update { it.copy(recentCallEventsText = text, lastCallEventText = text) }
+    }
+
+
+    fun setDiagnosticNotifyAllCalls(enabled: Boolean) {
+        callAlertStore.setDiagnosticNotifyAllCalls(enabled)
+        _uiState.update { it.copy(diagnosticNotifyAllCalls = enabled) }
+    }
+
+    fun showTestNotification() {
+        val helper = AlertNotificationHelper(getApplication())
+        helper.ensureChannel()
+        helper.showDiagnosticCallSeen("TEST", "Manual test")
     }
 
     fun appDetailsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -299,7 +317,7 @@ class MainViewModel(
         Alert mode: notification-based MVP
         READ_CALL_LOG: not requested
         Call screening active: $callScreeningActive
-        Last call event: ${_uiState.value.lastCallEventText.ifBlank { "(empty)" }}
+        Last call event: ${_uiState.value.recentCallEventsText.ifBlank { "(empty)" }}
         CallScreeningService: primary path + PHONE_STATE_CHANGED fallback
     """.trimIndent()
 

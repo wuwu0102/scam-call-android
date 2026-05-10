@@ -22,13 +22,27 @@ class ScamCallScreeningService : CallScreeningService() {
 
             val handle = callDetails.handle
             val rawNumber = if (handle?.scheme == PhoneAccount.SCHEME_TEL) {
-                handle.schemeSpecificPart
+                handle.schemeSpecificPart.orEmpty()
             } else {
-                null
+                ""
             }
 
-            if (rawNumber.isNullOrBlank()) {
-                CallAlertDiagnosticsStore(this).saveLastEvent(
+            val diagnosticsStore = CallAlertDiagnosticsStore(this)
+            diagnosticsStore.addEvent(
+                source = "CallScreeningService",
+                rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty(),
+                matched = false,
+                reason = "onScreenCall_entered"
+            )
+
+            if (CallAlertStore(this).isDiagnosticNotifyAllCallsEnabled()) {
+                val helper = AlertNotificationHelper(this)
+                helper.ensureChannel()
+                helper.showDiagnosticCallSeen(rawNumber, "CallScreeningService")
+            }
+
+            if (rawNumber.isBlank()) {
+                diagnosticsStore.addEvent(
                     source = "CallScreeningService",
                     rawNumber = "",
                     matched = false,
@@ -41,7 +55,7 @@ class ScamCallScreeningService : CallScreeningService() {
             val store = CallAlertStore(this)
             val entry = store.findLocalTestEntry(rawNumber) ?: store.findEntry(rawNumber)
 
-            CallAlertDiagnosticsStore(this).saveLastEvent(
+            diagnosticsStore.addEvent(
                 source = "CallScreeningService",
                 rawNumber = rawNumber,
                 matched = entry != null,

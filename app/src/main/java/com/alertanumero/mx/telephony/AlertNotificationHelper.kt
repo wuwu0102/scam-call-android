@@ -48,6 +48,27 @@ class AlertNotificationHelper(private val context: Context) {
         NotificationManagerCompat.from(context).notify(rawNumber.hashCode(), notification)
     }
 
+
+    fun showDiagnosticCallSeen(rawNumber: String, source: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+
+        val displayNumber = rawNumber.ifBlank { "No disponible" }
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("Diagnóstico ScamCall MX")
+            .setContentText("Llamada detectada por $source. Número: $displayNumber")
+            .setStyle(
+                NotificationCompat.BigTextStyle().bigText(
+                    "Llamada detectada por $source. Número: $displayNumber"
+                )
+            )
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+
+        NotificationManagerCompat.from(context).notify(("diag_" + source + rawNumber).hashCode(), notification)
+    }
+
     fun showSuspiciousCallAlert(rawNumber: String) {
         showCallAlert(rawNumber, ScamEntry(rawNumber, ScamCategory.SUSPICIOUS, ScamCategory.SUSPICIOUS.displayLabel))
     }
