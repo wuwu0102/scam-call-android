@@ -124,7 +124,11 @@ fun MainScreen(viewModel: MainViewModel) {
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = uiState.activation.detailText,
+                        text = if (uiState.activation.roleHeld && !uiState.callScreeningInvoked) {
+                            "Permiso activado. La búsqueda manual y la base de datos están activas. La alerta automática durante llamadas depende del sistema del teléfono."
+                        } else {
+                            uiState.activation.detailText
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
@@ -166,9 +170,14 @@ fun MainScreen(viewModel: MainViewModel) {
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (uiState.activation.roleActiveButServiceNotInvoked) {
+                    if (uiState.activation.roleHeld && !uiState.callScreeningInvoked) {
                         Text(
                             text = "CallScreening role is active, but Android has not invoked the service yet.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFEF6C00)
+                        )
+                        Text(
+                            text = "Este Android no está entregando el número entrante a la app. ScamCall MX no puede comparar la llamada automáticamente en este dispositivo.",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFFEF6C00)
                         )
@@ -206,12 +215,9 @@ fun MainScreen(viewModel: MainViewModel) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Button(
-                        onClick = {
-                            settingsLauncher.launch(viewModel.manageDefaultAppsIntent())
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Abrir apps predeterminadas") }
+                    Button(onClick = { settingsLauncher.launch(viewModel.defaultAppsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir apps predeterminadas") }
+                    Button(onClick = { settingsLauncher.launch(viewModel.phoneAppSettingsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de teléfono") }
+                    Button(onClick = { settingsLauncher.launch(viewModel.appDetailsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de la app") }
                     Button(
                         onClick = viewModel::refreshRecentCallAlertEvents,
                         modifier = Modifier.fillMaxWidth()
