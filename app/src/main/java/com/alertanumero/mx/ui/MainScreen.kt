@@ -110,7 +110,7 @@ fun MainScreen(viewModel: MainViewModel) {
             }
 
             item {
-                InfoCard(title = "Identificación", subtitle = "Estado del dispositivo") {
+                InfoCard(title = "Alertas por notificación", subtitle = "Estado del dispositivo") {
                     Text(
                         text = uiState.activation.statusText,
                         style = MaterialTheme.typography.headlineSmall,
@@ -133,7 +133,7 @@ fun MainScreen(viewModel: MainViewModel) {
                                 showActivationGuide = true
                             },
                             shape = RoundedCornerShape(999.dp)
-                        ) { Text("Cómo activar") }
+                        ) { Text("Activar alertas") }
                     }
                 }
             }
@@ -196,15 +196,14 @@ fun MainScreen(viewModel: MainViewModel) {
     if (showActivationGuide) {
         AlertDialog(
             onDismissRequest = { showActivationGuide = false },
-            title = { Text("Cómo activar") },
+            title = { Text("Activar alertas") },
             text = {
                 Text(
-                    "1. Toca “Abrir configuración” para intentar abrir la pantalla más útil en tu Android.\n" +
-                        "2. Revisa la ficha de esta app y la sección de Apps predeterminadas.\n" +
-                        "3. Si tu dispositivo lo ofrece, entra a ajustes de Teléfono o filtro/identificación de llamadas.\n" +
-                        "4. Activa los permisos y opciones disponibles para ScamCall MX.\n\n" +
-                        "Por seguridad, Android puede requerir configuración manual y confirmaciones adicionales.\n" +
-                        "La ruta exacta depende de la marca del dispositivo y de la versión de Android."
+                    "1. Permite las notificaciones para ScamCall MX.\n" +
+                        "2. Otorga permiso de estado del teléfono y, si está disponible, lectura de llamadas.\n" +
+                        "3. Mantén activa la app para recibir alertas durante llamadas entrantes.\n\n" +
+                        "En algunos dispositivos Android, el número entrante puede no estar disponible por restricciones del sistema.\n" +
+                        "Si Android o tu marca no permiten leer el número, ScamCall MX seguirá funcionando para búsqueda manual y actualización de base de datos."
                 )
             },
             confirmButton = {
