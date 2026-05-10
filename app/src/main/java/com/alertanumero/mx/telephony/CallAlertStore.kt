@@ -39,6 +39,15 @@ class CallAlertStore(context: Context) {
         return null
     }
 
+
+    fun setDiagnosticNotifyAllCalls(enabled: Boolean) {
+        prefs.edit().putBoolean("diagnostic_notify_all_calls", enabled).apply()
+    }
+
+    fun isDiagnosticNotifyAllCallsEnabled(): Boolean {
+        return prefs.getBoolean("diagnostic_notify_all_calls", false)
+    }
+
     fun saveNumbers(numbers: Set<String>) {
         saveEntries(numbers.associateWith {
             ScamEntry(it, ScamCategory.SUSPICIOUS, ScamCategory.SUSPICIOUS.displayLabel)

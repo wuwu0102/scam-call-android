@@ -26,6 +26,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -158,16 +159,39 @@ fun MainScreen(viewModel: MainViewModel) {
                         )
                     }
                     Button(
-                        onClick = viewModel::refreshLastCallAlertEvent,
+                        onClick = viewModel::refreshRecentCallAlertEvents,
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text("Revisar último evento de llamada") }
-                    if (uiState.lastCallEventText.isNotBlank()) {
+                    ) { Text("Revisar eventos de llamada") }
+                    Button(
+                        onClick = viewModel::showTestNotification,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Probar notificación") }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Switch(
+                            checked = uiState.diagnosticNotifyAllCalls,
+                            onCheckedChange = viewModel::setDiagnosticNotifyAllCalls
+                        )
+                        Text(
+                            text = "Modo diagnóstico: notificar cualquier llamada",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Text(
+                        text = "Solo para pruebas. Muestra una notificación aunque el número no esté en la base de datos.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (uiState.recentCallEventsText.isNotBlank()) {
                         OutlinedTextField(
-                            value = uiState.lastCallEventText,
+                            value = uiState.recentCallEventsText,
                             onValueChange = {},
                             modifier = Modifier.fillMaxWidth(),
                             readOnly = true,
-                            label = { Text("Último evento") }
+                            label = { Text("Eventos recientes") }
                         )
                     }
                 }

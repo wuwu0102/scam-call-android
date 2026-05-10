@@ -12,8 +12,17 @@ class IncomingCallReceiver : BroadcastReceiver() {
         if (state != TelephonyManager.EXTRA_STATE_RINGING) return
 
         val incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
+        val diagnosticsStore = CallAlertDiagnosticsStore(context)
+        val callAlertStore = CallAlertStore(context)
+
+        if (callAlertStore.isDiagnosticNotifyAllCallsEnabled()) {
+            val helper = AlertNotificationHelper(context)
+            helper.ensureChannel()
+            helper.showDiagnosticCallSeen(incomingNumber.orEmpty(), "PHONE_STATE_CHANGED")
+        }
+
         if (incomingNumber.isNullOrBlank()) {
-            CallAlertDiagnosticsStore(context).saveLastEvent(
+            diagnosticsStore.addEvent(
                 source = "PHONE_STATE_CHANGED",
                 rawNumber = "",
                 matched = false,
@@ -22,10 +31,9 @@ class IncomingCallReceiver : BroadcastReceiver() {
             return
         }
 
-        val store = CallAlertStore(context)
-        val entry = store.findLocalTestEntry(incomingNumber) ?: store.findEntry(incomingNumber)
+        val entry = callAlertStore.findLocalTestEntry(incomingNumber) ?: callAlertStore.findEntry(incomingNumber)
 
-        CallAlertDiagnosticsStore(context).saveLastEvent(
+        diagnosticsStore.addEvent(
             source = "PHONE_STATE_CHANGED",
             rawNumber = incomingNumber,
             matched = entry != null,
