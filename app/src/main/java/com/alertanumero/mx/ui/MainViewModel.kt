@@ -2,6 +2,7 @@ package com.alertanumero.mx.ui
 
 import android.app.Application
 import android.Manifest
+import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -15,6 +16,7 @@ import com.alertanumero.mx.data.repository.ScamCategory
 import com.alertanumero.mx.data.repository.ScamEntry
 import com.alertanumero.mx.data.repository.ScamRepository
 import com.alertanumero.mx.telephony.AlertNotificationHelper
+import com.alertanumero.mx.telephony.CallAlertDiagnosticsStore
 import com.alertanumero.mx.telephony.CallAlertStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +30,8 @@ data class ActivationUiState(
     val supported: Boolean = false,
     val isActive: Boolean = false,
     val statusText: String = "Activación requerida",
-    val detailText: String = "Verifica permisos de llamada e identificación en tu dispositivo."
+    val detailText: String = "Verifica permisos de llamada e identificación en tu dispositivo.",
+    val callScreeningActive: Boolean = false
 )
 
 data class MainUiState(
@@ -47,7 +50,8 @@ data class MainUiState(
     val localTestInput: String = "",
     val localTestMessage: String = "",
     val compatibilityReport: String = "",
-    val activation: ActivationUiState = ActivationUiState()
+    val activation: ActivationUiState = ActivationUiState(),
+    val lastCallEventText: String = ""
 )
 
 class MainViewModel(
@@ -127,23 +131,55 @@ class MainViewModel(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
+        val callScreeningActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = context.getSystemService(RoleManager::class.java)
+            roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true
+        } else {
+            false
+        }
         val active = phoneStateGranted && notificationGranted
 
-        val activationState = when {
-            active -> ActivationUiState(
-                supported = true,
-                isActive = true,
-                statusText = "Activa",
-                detailText = "Protección activa. En algunos dispositivos Android, el número entrante puede no estar disponible por restricciones del sistema."
-            )
-            else -> ActivationUiState(
-                supported = true,
-                isActive = false,
-                statusText = "Activación requerida",
-                detailText = "Permite que ScamCall MX muestre una alerta si detecta una llamada sospechosa."
-            )
+        val detailText = when {
+            callScreeningActive -> "Protección activa con identificación de llamadas."
+            notificationGranted -> "Activa parcialmente. Para mejorar la detección, activa ScamCall MX como app de identificación y filtro de llamadas."
+            else -> "Permite notificaciones y activa identificación de llamadas."
         }
+
+        val activationState = ActivationUiState(
+            supported = true,
+            isActive = active,
+            statusText = if (active) "Activa" else "Activación requerida",
+            detailText = detailText,
+            callScreeningActive = callScreeningActive
+        )
         _uiState.update { it.copy(activation = activationState) }
+    }
+
+    fun callScreeningRoleIntent(): Intent? {
+        val context = getApplication<Application>()
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = context.getSystemService(RoleManager::class.java)
+            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
+                roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+    }
+
+    fun refreshLastCallAlertEvent() {
+        val event = CallAlertDiagnosticsStore(getApplication()).getLastEvent()
+        val text = if (event == null) {
+            "Sin eventos de llamada registrados todavía."
+        } else {
+            "Último evento: ${event.source}\n" +
+                "Número: ${event.rawNumber.ifBlank { "No disponible" }}\n" +
+                "Resultado: ${if (event.matched) "Coincidió" else "No coincidió"}\n" +
+                "Motivo: ${event.reason}"
+        }
+        _uiState.update { it.copy(lastCallEventText = text) }
     }
 
     fun appDetailsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -246,6 +282,8 @@ class MainViewModel(
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
 
+        val callScreeningActive = _uiState.value.activation.callScreeningActive
+
         val report = """
         ScamCall MX - Android compatibility report
         Brand: ${Build.BRAND}
@@ -260,7 +298,9 @@ class MainViewModel(
         Last update: ${_uiState.value.lastUpdated}
         Alert mode: notification-based MVP
         READ_CALL_LOG: not requested
-        CallScreeningService: not enabled
+        Call screening active: $callScreeningActive
+        Last call event: ${_uiState.value.lastCallEventText.ifBlank { "(empty)" }}
+        CallScreeningService: primary path + PHONE_STATE_CHANGED fallback
     """.trimIndent()
 
         _uiState.update { it.copy(compatibilityReport = report) }

@@ -51,6 +51,9 @@ fun MainScreen(viewModel: MainViewModel) {
     val settingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.refreshActivationStatus()
     }
+    val callScreeningLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.refreshActivationStatus()
+    }
 
     fun openActivationSettings() {
         val intents = viewModel.activationSettingsIntents()
@@ -134,6 +137,38 @@ fun MainScreen(viewModel: MainViewModel) {
                             },
                             shape = RoundedCornerShape(999.dp)
                         ) { Text("Activar alertas") }
+                    }
+                    if (!uiState.activation.callScreeningActive) {
+                        Button(
+                            onClick = {
+                                val intent = viewModel.callScreeningRoleIntent()
+                                if (intent != null) {
+                                    callScreeningLauncher.launch(intent)
+                                } else {
+                                    viewModel.refreshActivationStatus()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Activar identificación de llamadas") }
+                    } else {
+                        Text(
+                            text = "Identificación de llamadas activada",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = viewModel::refreshLastCallAlertEvent,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Revisar último evento de llamada") }
+                    if (uiState.lastCallEventText.isNotBlank()) {
+                        OutlinedTextField(
+                            value = uiState.lastCallEventText,
+                            onValueChange = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            readOnly = true,
+                            label = { Text("Último evento") }
+                        )
                     }
                 }
             }

@@ -26,6 +26,17 @@ Incoming call alerts depend on whether the device exposes the incoming number th
             </intent-filter>
         </activity>
 
+
+
+        <service
+            android:name=".telephony.ScamCallScreeningService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".telephony.IncomingCallReceiver"
             android:enabled="true"
