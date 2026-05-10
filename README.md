@@ -228,8 +228,14 @@ The parser remains backward compatible with legacy JSON files, including number-
 
 ### Android call alert compatibility
 
-This version uses a notification-based MVP and does not request READ_CALL_LOG.
+Primary path: `CallScreeningService` with `ROLE_CALL_SCREENING`.
 
-Some Android devices may not expose the incoming number to third-party apps through PHONE_STATE_CHANGED. When the number is unavailable, the app cannot match it against the local database and no call alert will be shown.
+Fallback path: `PHONE_STATE_CHANGED` receiver for devices/flows where call screening is not used.
+
+The app does not request `READ_CALL_LOG`.
+
+Users must enable ScamCall MX as the call screening / caller ID app when prompted.
+
+Some calls may not be passed to call screening if the number is private, unavailable, restricted, or already handled differently by the device/phone app.
 
 Users can generate a local compatibility report in the app and send it to the developer. The report is not uploaded automatically.
