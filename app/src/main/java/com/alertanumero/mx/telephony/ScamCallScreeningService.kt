@@ -62,13 +62,17 @@ class ScamCallScreeningService : CallScreeningService() {
     }
 
     private fun respondAllow(callDetails: Call.Details) {
-        val response = CallResponse.Builder()
+        val builder = CallResponse.Builder()
             .setDisallowCall(false)
             .setRejectCall(false)
-            .setSilenceCall(false)
             .setSkipCallLog(false)
             .setSkipNotification(false)
-            .build()
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            builder.setSilenceCall(false)
+        }
+
+        val response = builder.build()
         respondToCall(callDetails, response)
     }
 }
