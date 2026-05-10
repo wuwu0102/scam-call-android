@@ -1,15 +1,19 @@
 package com.alertanumero.mx.ui
 
 import android.app.Application
-import android.app.role.RoleManager
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.alertanumero.mx.data.repository.FetchResult
 import com.alertanumero.mx.data.repository.ScamRepository
+import com.alertanumero.mx.telephony.AlertNotificationHelper
+import com.alertanumero.mx.telephony.CallAlertStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,11 +53,13 @@ class MainViewModel(
 
     private var cachedNumbers: Set<String> = emptySet()
     private val prefs = application.getSharedPreferences("local_test_tool", 0)
+    private val callAlertStore = CallAlertStore(application)
     private val localNumberKey = "local_test_number"
     private val localExpiryKey = "local_test_expiry"
 
     init {
         cleanupExpiredLocalTestNumber()
+        AlertNotificationHelper(application).ensureChannel()
         refreshActivationStatus()
         refreshDatabase()
     }
@@ -85,6 +91,7 @@ class MainViewModel(
                 localTestMessage = "Número de prueba guardado localmente por 24 horas."
             )
         }
+        callAlertStore.saveLocalTestNumber(normalized)
         return true
     }
 
@@ -105,45 +112,32 @@ class MainViewModel(
 
     fun refreshActivationStatus() {
         val context = getApplication<Application>()
-        val roleManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            context.getSystemService(RoleManager::class.java)
-        } else {
-            null
-        }
-
-        val isRoleSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-            roleManager?.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) == true
-        val isRoleHeld = isRoleSupported && roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true
+        val phoneStateGranted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.READ_PHONE_STATE
+        ) == PackageManager.PERMISSION_GRANTED
+        val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        val active = phoneStateGranted && notificationGranted
 
         val activationState = when {
-            isRoleHeld -> ActivationUiState(
+            active -> ActivationUiState(
                 supported = true,
                 isActive = true,
-                statusText = "Protección activa",
-                detailText = "El rol de identificación/filtro de llamadas está activo en este dispositivo."
+                statusText = "Activa",
+                detailText = "Protección activa. En algunos dispositivos Android, el número entrante puede no estar disponible por restricciones del sistema."
             )
-            isRoleSupported -> ActivationUiState(
+            else -> ActivationUiState(
                 supported = true,
                 isActive = false,
                 statusText = "Activación requerida",
-                detailText = "Este Android permite rol de filtro, pero aún no está activado para la app."
-            )
-            else -> ActivationUiState(
-                supported = false,
-                isActive = false,
-                statusText = "Activación requerida",
-                detailText = "La detección automática puede variar según Android, fabricante y app de Teléfono."
+                detailText = "Permite que ScamCall MX muestre una alerta si detecta una llamada sospechosa."
             )
         }
         _uiState.update { it.copy(activation = activationState) }
-    }
-
-    fun roleSettingsIntent(): Intent? {
-        val context = getApplication<Application>()
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
-        val roleManager = context.getSystemService(RoleManager::class.java) ?: return null
-        if (!roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) return null
-        return roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
     }
 
     fun appDetailsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -153,7 +147,6 @@ class MainViewModel(
     fun activationSettingsIntents(): List<Intent> {
         val context = getApplication<Application>()
         val packageName = context.packageName
-        val roleIntent = roleSettingsIntent()
 
         fun safeIntent(action: String, block: (Intent.() -> Unit)? = null): Intent? = runCatching {
             Intent(action).apply { block?.invoke(this) }
@@ -166,7 +159,6 @@ class MainViewModel(
             safeIntent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
             safeIntent("android.settings.CALL_SETTINGS"),
             safeIntent("android.settings.CALL_SCREENING_SETTINGS"),
-            roleIntent,
             safeIntent(Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS),
             safeIntent(Settings.ACTION_APP_NOTIFICATION_SETTINGS) {
                 putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
@@ -187,6 +179,7 @@ class MainViewModel(
                 when (val result = repository.fetchDatabase()) {
                     is FetchResult.Success -> {
                         cachedNumbers = result.snapshot.numbers
+                        callAlertStore.saveNumbers(cachedNumbers)
                         _uiState.update {
                             it.copy(
                                 recordCount = result.snapshot.totalCount,
