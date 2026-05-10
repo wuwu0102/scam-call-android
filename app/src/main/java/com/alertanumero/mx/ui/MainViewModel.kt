@@ -160,13 +160,14 @@ class MainViewModel(
         }.getOrNull()
 
         val candidates = listOfNotNull(
-            roleIntent,
-            safeIntent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
-            safeIntent("android.settings.CALL_SCREENING_SETTINGS"),
-            safeIntent(Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS),
             safeIntent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS) {
                 data = Uri.fromParts("package", packageName, null)
             },
+            safeIntent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
+            safeIntent("android.settings.CALL_SETTINGS"),
+            safeIntent("android.settings.CALL_SCREENING_SETTINGS"),
+            roleIntent,
+            safeIntent(Settings.ACTION_MANAGE_ALL_APPLICATIONS_SETTINGS),
             safeIntent(Settings.ACTION_APP_NOTIFICATION_SETTINGS) {
                 putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
             },

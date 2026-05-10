@@ -149,9 +149,6 @@ fun MainScreen(viewModel: MainViewModel) {
                             CircularProgressIndicator(); Text("Actualizando…", style = MaterialTheme.typography.bodySmall)
                         }
                     }
-                    if (uiState.sourceUrl.isNotBlank()) {
-                        Text(text = "Fuente: ${uiState.sourceUrl}", style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
                 }
             }
 
@@ -202,13 +199,12 @@ fun MainScreen(viewModel: MainViewModel) {
             title = { Text("Cómo activar") },
             text = {
                 Text(
-                    "1. Abre Configuración.\n" +
-                        "2. Entra a Apps.\n" +
-                        "3. Busca Alerta Número MX / ScamCall MX.\n" +
-                        "4. Revisa permisos de Teléfono, ID de llamada o app predeterminada de llamadas (si aparece).\n" +
-                        "5. Activa permisos o configura la app según lo permita tu dispositivo.\n\n" +
-                        "Android no permite activar esto automáticamente. Debes confirmarlo manualmente por seguridad.\n\n" +
-                        "La ubicación exacta puede variar según la marca y versión de Android."
+                    "1. Toca “Abrir configuración” para intentar abrir la pantalla más útil en tu Android.\n" +
+                        "2. Revisa la ficha de esta app y la sección de Apps predeterminadas.\n" +
+                        "3. Si tu dispositivo lo ofrece, entra a ajustes de Teléfono o filtro/identificación de llamadas.\n" +
+                        "4. Activa los permisos y opciones disponibles para ScamCall MX.\n\n" +
+                        "Por seguridad, Android puede requerir configuración manual y confirmaciones adicionales.\n" +
+                        "La ruta exacta depende de la marca del dispositivo y de la versión de Android."
                 )
             },
             confirmButton = {
