@@ -7,7 +7,9 @@ import org.json.JSONObject
 data class LastCallAlertEvent(
     val source: String,
     val rawNumber: String,
+    val normalizedNumber: String,
     val matched: Boolean,
+    val category: String,
     val reason: String,
     val timestamp: Long
 )
@@ -18,7 +20,9 @@ class CallAlertDiagnosticsStore(context: Context) {
     fun addEvent(
         source: String,
         rawNumber: String,
+        normalizedNumber: String = "",
         matched: Boolean,
+        category: String = "",
         reason: String
     ) {
         val current = readEvents().toMutableList()
@@ -27,7 +31,9 @@ class CallAlertDiagnosticsStore(context: Context) {
             LastCallAlertEvent(
                 source = source,
                 rawNumber = rawNumber,
+                normalizedNumber = normalizedNumber,
                 matched = matched,
+                category = category,
                 reason = reason,
                 timestamp = System.currentTimeMillis()
             )
@@ -39,7 +45,9 @@ class CallAlertDiagnosticsStore(context: Context) {
                 JSONObject()
                     .put("source", event.source)
                     .put("rawNumber", event.rawNumber)
+                     .put("normalizedNumber", event.normalizedNumber)
                     .put("matched", event.matched)
+                    .put("category", event.category)
                     .put("reason", event.reason)
                     .put("timestamp", event.timestamp)
             )
@@ -61,7 +69,9 @@ class CallAlertDiagnosticsStore(context: Context) {
                     LastCallAlertEvent(
                         source = item.optString("source"),
                         rawNumber = item.optString("rawNumber"),
+                        normalizedNumber = item.optString("normalizedNumber"),
                         matched = item.optBoolean("matched", false),
+                        category = item.optString("category"),
                         reason = item.optString("reason"),
                         timestamp = item.optLong("timestamp", 0L)
                     )
