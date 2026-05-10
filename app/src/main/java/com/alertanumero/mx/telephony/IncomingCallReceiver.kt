@@ -13,11 +13,11 @@ class IncomingCallReceiver : BroadcastReceiver() {
 
         val incomingNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER) ?: return
         val store = CallAlertStore(context)
-        val isSuspicious = store.hasSuspiciousNumber(incomingNumber) || store.isLocalTestHit(incomingNumber)
-        if (!isSuspicious) return
+        val entry = store.findLocalTestEntry(incomingNumber) ?: store.findEntry(incomingNumber)
+        if (entry == null) return
 
         val helper = AlertNotificationHelper(context)
         helper.ensureChannel()
-        helper.showSuspiciousCallAlert(incomingNumber)
+        helper.showCallAlert(incomingNumber, entry)
     }
 }
