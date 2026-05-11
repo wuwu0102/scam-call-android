@@ -11,6 +11,7 @@ class ScamCallScreeningService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
         try {
             val isAtLeastQ = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+            val isAtLeastR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
             val rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty()
             val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
             val callDirectionValue = if (isAtLeastQ) {
@@ -28,10 +29,10 @@ class ScamCallScreeningService : CallScreeningService() {
                 "ASSUMED_INCOMING_PRE_Q"
             }
             val handleScheme = callDetails.handle?.scheme.orEmpty()
-            val handlePresentation = if (isAtLeastQ) {
+            val handlePresentation = if (isAtLeastR) {
                 callDetails.callerNumberVerificationStatus.toString()
             } else {
-                "N/A_PRE_Q"
+                "N/A_PRE_R"
             }
             val isIncoming = if (isAtLeastQ) {
                 callDirectionValue == Call.Details.DIRECTION_INCOMING
