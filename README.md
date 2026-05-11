@@ -258,6 +258,16 @@ Users can generate a local compatibility report in the app and send it to the de
 
 1. Install the debug APK on the Android phone.
 2. Open the app once.
+3. Tap **Activar alertas** and accept the Call Screening role dialog.
+4. Enable diagnostic **notify-all** mode.
+5. Call from another physical phone number that is **not saved in contacts**.
+6. Confirm **last CallScreeningService event** changes from `none yet` to `onScreenCall_entered`.
+7. If only PHONE_STATE appears with `missing_EXTRA_INCOMING_NUMBER`, do not treat that as final failure; verify RoleManager flow and native Phone app call path again.
+
+> Notes:
+> - Use a real unsaved number first.
+> - Do not test with LINE / WhatsApp / VoIP calls.
+> - Do not test with hidden/private caller ID.
 3. Grant Call Screening / Caller ID role when requested.
 4. Enable diagnostic notify-all-calls mode in the app.
 5. Add a local test number from another phone.

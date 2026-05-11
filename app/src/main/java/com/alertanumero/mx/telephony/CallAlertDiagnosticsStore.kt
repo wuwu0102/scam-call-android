@@ -11,7 +11,11 @@ data class LastCallAlertEvent(
     val matched: Boolean,
     val category: String,
     val reason: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val callDirection: String = "",
+    val handleScheme: String = "",
+    val handlePresentation: String = "",
+    val isIncoming: Boolean = true
 )
 
 class CallAlertDiagnosticsStore(context: Context) {
@@ -23,7 +27,11 @@ class CallAlertDiagnosticsStore(context: Context) {
         normalizedNumber: String = "",
         matched: Boolean,
         category: String = "",
-        reason: String
+        reason: String,
+        callDirection: String = "",
+        handleScheme: String = "",
+        handlePresentation: String = "",
+        isIncoming: Boolean = true
     ) {
         val current = readEvents().toMutableList()
         current.add(
@@ -35,7 +43,11 @@ class CallAlertDiagnosticsStore(context: Context) {
                 matched = matched,
                 category = category,
                 reason = reason,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                callDirection = callDirection,
+                handleScheme = handleScheme,
+                handlePresentation = handlePresentation,
+                isIncoming = isIncoming
             )
         )
         val limited = current.take(10)
@@ -50,6 +62,10 @@ class CallAlertDiagnosticsStore(context: Context) {
                     .put("category", event.category)
                     .put("reason", event.reason)
                     .put("timestamp", event.timestamp)
+                    .put("callDirection", event.callDirection)
+                    .put("handleScheme", event.handleScheme)
+                    .put("handlePresentation", event.handlePresentation)
+                    .put("isIncoming", event.isIncoming)
             )
         }
         prefs.edit().putString("call_alert_events_json", array.toString()).apply()
@@ -73,7 +89,11 @@ class CallAlertDiagnosticsStore(context: Context) {
                         matched = item.optBoolean("matched", false),
                         category = item.optString("category"),
                         reason = item.optString("reason"),
-                        timestamp = item.optLong("timestamp", 0L)
+                        timestamp = item.optLong("timestamp", 0L),
+                        callDirection = item.optString("callDirection"),
+                        handleScheme = item.optString("handleScheme"),
+                        handlePresentation = item.optString("handlePresentation"),
+                        isIncoming = item.optBoolean("isIncoming", true)
                     )
                 )
             }

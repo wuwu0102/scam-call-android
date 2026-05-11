@@ -223,7 +223,7 @@ class MainViewModel(
         val automaticStatus = when {
             hasCallScreeningEvent -> "CallScreeningService recibió llamadas en este dispositivo."
             _uiState.value.activation.roleHeld && hasPhoneStateMissingNumber ->
-                "Este Android no está entregando el número entrante a la app. ScamCall MX no puede comparar la llamada automáticamente en este dispositivo."
+                "El rol está activo, pero aún no se ha registrado una llamada real mediante CallScreeningService."
             _uiState.value.activation.roleHeld ->
                 "Permiso activado, pero Android todavía no ha enviado llamadas a ScamCall MX."
             else -> "Manual lookup only on this device."
@@ -236,9 +236,11 @@ class MainViewModel(
                     "Número (raw): ${event.rawNumber.ifBlank { "No disponible" }}\n" +
                     "Número normalizado: ${event.normalizedNumber.ifBlank { "No disponible" }}\n" +
                     "Resultado DB: ${if (event.matched) "Coincidió" else "No coincidió"}\n" +
-                    "Categoría: ${event.category.ifBlank { "N/A" }}\n" +
-                    "Motivo: ${event.reason}\n" +
-                    "Timestamp: ${event.timestamp}"
+                "Categoría: ${event.category.ifBlank { "N/A" }}\n" +
+                "Motivo: ${event.reason}\n" +
+                "Dirección: ${event.callDirection.ifBlank { "N/A" }} · incoming: ${event.isIncoming}\n" +
+                "Scheme: ${event.handleScheme.ifBlank { "N/A" }} · Presentation: ${event.handlePresentation.ifBlank { "N/A" }}\n" +
+                "Timestamp: ${event.timestamp}"
             }
         }
         _uiState.update {

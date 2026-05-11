@@ -9,28 +9,37 @@ import com.alertanumero.mx.data.repository.ScamRepository
 class ScamCallScreeningService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
         try {
+            val rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty()
+            val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
+            val callDirection = when (callDetails.callDirection) {
+                Call.Details.DIRECTION_INCOMING -> "INCOMING"
+                Call.Details.DIRECTION_OUTGOING -> "OUTGOING"
+                else -> "UNKNOWN"
+            }
+            val handleScheme = callDetails.handle?.scheme.orEmpty()
+            val handlePresentation = callDetails.callerNumberVerificationStatus.toString()
             val isIncoming = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 callDetails.callDirection == Call.Details.DIRECTION_INCOMING
             } else {
                 true
             }
+            val diagnosticsStore = CallAlertDiagnosticsStore(this)
+            diagnosticsStore.addEvent(
+                source = "CallScreeningService",
+                rawNumber = rawNumber,
+                normalizedNumber = normalizedNumber,
+                matched = false,
+                reason = "onScreenCall_entered",
+                callDirection = callDirection,
+                handleScheme = handleScheme,
+                handlePresentation = handlePresentation,
+                isIncoming = isIncoming
+            )
 
             if (!isIncoming) {
                 respondAllow(callDetails)
                 return
             }
-
-            val rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty()
-            val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
-
-            val diagnosticsStore = CallAlertDiagnosticsStore(this)
-            diagnosticsStore.addEvent(
-                source = "CallScreeningService",
-                rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty(),
-                normalizedNumber = normalizedNumber,
-                matched = false,
-                reason = "onScreenCall_entered"
-            )
 
             val store = CallAlertStore(this)
             if (store.isDiagnosticNotifyAllCallsEnabled()) {
@@ -52,7 +61,11 @@ class ScamCallScreeningService : CallScreeningService() {
                     rawNumber = "",
                     normalizedNumber = normalizedNumber,
                     matched = false,
-                    reason = "empty_or_unavailable_number"
+                    reason = "empty_or_unavailable_number",
+                    callDirection = callDirection,
+                    handleScheme = handleScheme,
+                    handlePresentation = handlePresentation,
+                    isIncoming = isIncoming
                 )
                 respondAllow(callDetails)
                 return
@@ -66,7 +79,11 @@ class ScamCallScreeningService : CallScreeningService() {
                 normalizedNumber = normalizedNumber,
                 matched = entry != null,
                 category = entry?.category?.name.orEmpty(),
-                reason = if (entry != null) "matched" else "not_found"
+                reason = if (entry != null) "matched" else "not_found",
+                callDirection = callDirection,
+                handleScheme = handleScheme,
+                handlePresentation = handlePresentation,
+                isIncoming = isIncoming
             )
 
             if (entry != null) {
