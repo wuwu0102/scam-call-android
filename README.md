@@ -278,3 +278,10 @@ Users can generate a local compatibility report in the app and send it to the de
    - last call screening event is updated
    - notification or caller ID overlay appears
 8. If CallScreeningService has no event but fallback has event, the phone/carrier/ROM may not expose CallScreeningService correctly; keep fallback diagnostics visible.
+
+
+## Pixel / Google Phone notes
+
+- Google Phone must remain the default dialer.
+- ScamCall MX only acts as CallScreeningService.
+- If Google Phone does not bind the service, diagnostics should explicitly show that state.
