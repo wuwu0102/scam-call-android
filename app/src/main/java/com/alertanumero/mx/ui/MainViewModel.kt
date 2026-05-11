@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.telecom.TelecomManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -39,7 +40,9 @@ data class ActivationUiState(
     val serviceComponentName: String = "",
     val packageName: String = "",
     val appLabel: String = "",
-    val roleActiveButServiceNotInvoked: Boolean = false
+    val roleActiveButServiceNotInvoked: Boolean = false,
+    val defaultCallerIdPackage: String = "",
+    val screeningBindSuccess: Boolean = false
 )
 
 data class MainUiState(
@@ -151,6 +154,8 @@ class MainViewModel(
         val servicePermissionRequired = "android.permission.BIND_SCREENING_SERVICE"
         val serviceIntent = Intent("android.telecom.CallScreeningService").setPackage(context.packageName)
         val queriedServices = context.packageManager.queryIntentServices(serviceIntent, PackageManager.GET_META_DATA)
+        val telecomManager = context.getSystemService(TelecomManager::class.java)
+        val defaultDialerPackage = telecomManager?.defaultDialerPackage.orEmpty()
         val declaredServiceInfo = queriedServices.firstOrNull { info ->
             info.serviceInfo?.name == "com.alertanumero.mx.telephony.ScamCallScreeningService" ||
                 info.serviceInfo?.name?.endsWith(".ScamCallScreeningService") == true
@@ -184,7 +189,9 @@ class MainViewModel(
             serviceComponentName = serviceComponentName,
             packageName = context.packageName,
             appLabel = appLabel,
-            roleActiveButServiceNotInvoked = roleActiveButServiceNotInvoked
+            roleActiveButServiceNotInvoked = roleActiveButServiceNotInvoked,
+            defaultCallerIdPackage = defaultDialerPackage,
+            screeningBindSuccess = queriedServices.isNotEmpty()
         )
         _uiState.update { it.copy(activation = activationState) }
     }
