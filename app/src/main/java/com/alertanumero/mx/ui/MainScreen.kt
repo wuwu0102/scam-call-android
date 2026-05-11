@@ -245,6 +245,20 @@ fun MainScreen(viewModel: MainViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Text(
+                        text = "last call screening event: ${uiState.lastCallScreeningEventText}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "last fallback event: ${uiState.lastFallbackEventText}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     if (uiState.recentCallEventsText.isNotBlank()) {
                         OutlinedTextField(
                             value = uiState.recentCallEventsText,
