@@ -1,5 +1,6 @@
 package com.alertanumero.mx.telephony
 
+import android.os.Build
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.telecom.CallScreeningService.CallResponse
@@ -9,28 +10,52 @@ import com.alertanumero.mx.data.repository.ScamRepository
 class ScamCallScreeningService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
         try {
-            val isIncoming = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                callDetails.callDirection == Call.Details.DIRECTION_INCOMING
+            val isAtLeastQ = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+            val isAtLeastR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+            val rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty()
+            val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
+            val callDirectionValue = if (isAtLeastQ) {
+                callDetails.callDirection
+            } else {
+                Call.Details.DIRECTION_INCOMING
+            }
+            val callDirection = if (isAtLeastQ) {
+                when (callDirectionValue) {
+                    Call.Details.DIRECTION_INCOMING -> "INCOMING"
+                    Call.Details.DIRECTION_OUTGOING -> "OUTGOING"
+                    else -> "UNKNOWN"
+                }
+            } else {
+                "ASSUMED_INCOMING_PRE_Q"
+            }
+            val handleScheme = callDetails.handle?.scheme.orEmpty()
+            val handlePresentation = if (isAtLeastR) {
+                callDetails.callerNumberVerificationStatus.toString()
+            } else {
+                "N/A_PRE_R"
+            }
+            val isIncoming = if (isAtLeastQ) {
+                callDirectionValue == Call.Details.DIRECTION_INCOMING
             } else {
                 true
             }
+            val diagnosticsStore = CallAlertDiagnosticsStore(this)
+            diagnosticsStore.addEvent(
+                source = "CallScreeningService",
+                rawNumber = rawNumber,
+                normalizedNumber = normalizedNumber,
+                matched = false,
+                reason = "onScreenCall_entered",
+                callDirection = callDirection,
+                handleScheme = handleScheme,
+                handlePresentation = handlePresentation,
+                isIncoming = isIncoming
+            )
 
             if (!isIncoming) {
                 respondAllow(callDetails)
                 return
             }
-
-            val rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty()
-            val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
-
-            val diagnosticsStore = CallAlertDiagnosticsStore(this)
-            diagnosticsStore.addEvent(
-                source = "CallScreeningService",
-                rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty(),
-                normalizedNumber = normalizedNumber,
-                matched = false,
-                reason = "onScreenCall_entered"
-            )
 
             val store = CallAlertStore(this)
             if (store.isDiagnosticNotifyAllCallsEnabled()) {
@@ -52,7 +77,11 @@ class ScamCallScreeningService : CallScreeningService() {
                     rawNumber = "",
                     normalizedNumber = normalizedNumber,
                     matched = false,
-                    reason = "empty_or_unavailable_number"
+                    reason = "empty_or_unavailable_number",
+                    callDirection = callDirection,
+                    handleScheme = handleScheme,
+                    handlePresentation = handlePresentation,
+                    isIncoming = isIncoming
                 )
                 respondAllow(callDetails)
                 return
@@ -66,7 +95,11 @@ class ScamCallScreeningService : CallScreeningService() {
                 normalizedNumber = normalizedNumber,
                 matched = entry != null,
                 category = entry?.category?.name.orEmpty(),
-                reason = if (entry != null) "matched" else "not_found"
+                reason = if (entry != null) "matched" else "not_found",
+                callDirection = callDirection,
+                handleScheme = handleScheme,
+                handlePresentation = handlePresentation,
+                isIncoming = isIncoming
             )
 
             if (entry != null) {
@@ -96,7 +129,7 @@ class ScamCallScreeningService : CallScreeningService() {
             .setSkipCallLog(false)
             .setSkipNotification(false)
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             builder.setSilenceCall(false)
         }
 

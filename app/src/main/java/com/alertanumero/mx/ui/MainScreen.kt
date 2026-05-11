@@ -2,6 +2,7 @@ package com.alertanumero.mx.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.Toast
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -41,10 +42,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var showActivationGuide by remember { mutableStateOf(false) }
     var showLocalSavedDialog by remember { mutableStateOf(false) }
@@ -56,12 +59,23 @@ fun MainScreen(viewModel: MainViewModel) {
         viewModel.refreshActivationStatus()
     }
 
+    fun safeLaunch(intent: android.content.Intent?) {
+        if (intent == null || intent.resolveActivity(context.packageManager) == null) {
+            Toast.makeText(context, "No se pudo abrir esta configuración.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        runCatching { settingsLauncher.launch(intent) }
+            .onFailure { Toast.makeText(context, "No se pudo abrir esta configuración.", Toast.LENGTH_SHORT).show() }
+    }
+
     fun openActivationSettings() {
         val intents = viewModel.activationSettingsIntents()
         intents.firstOrNull()?.let {
-            runCatching { settingsLauncher.launch(it) }
-                .onFailure { viewModel.refreshActivationStatus() }
-        } ?: viewModel.refreshActivationStatus()
+            safeLaunch(it)
+        } ?: run {
+            Toast.makeText(context, "No se encontró una pantalla de configuración compatible.", Toast.LENGTH_SHORT).show()
+            viewModel.refreshActivationStatus()
+        }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -172,12 +186,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     )
                     if (uiState.activation.roleHeld && !uiState.callScreeningInvoked) {
                         Text(
-                            text = "CallScreening role is active, but Android has not invoked the service yet.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFEF6C00)
-                        )
-                        Text(
-                            text = "Este Android no está entregando el número entrante a la app. ScamCall MX no puede comparar la llamada automáticamente en este dispositivo.",
+                            text = "El rol está activo, pero aún no se ha registrado una llamada real mediante CallScreeningService.",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFFEF6C00)
                         )
@@ -194,16 +203,17 @@ fun MainScreen(viewModel: MainViewModel) {
                                 showActivationGuide = true
                             },
                             shape = RoundedCornerShape(999.dp)
-                        ) { Text("Activar alertas") }
+                        ) { Text(if (uiState.activation.roleHeld) "Revisar configuración" else "Activar alertas") }
                     }
-                    if (!uiState.activation.callScreeningActive) {
+                    if (!uiState.activation.roleHeld) {
                         Button(
                             onClick = {
                                 val intent = viewModel.callScreeningRoleIntent()
                                 if (intent != null) {
-                                    callScreeningLauncher.launch(intent)
+                                    runCatching { callScreeningLauncher.launch(intent) }
+                                        .onFailure { openActivationSettings() }
                                 } else {
-                                    viewModel.refreshActivationStatus()
+                                    openActivationSettings()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()
@@ -215,9 +225,9 @@ fun MainScreen(viewModel: MainViewModel) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Button(onClick = { settingsLauncher.launch(viewModel.defaultAppsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir apps predeterminadas") }
-                    Button(onClick = { settingsLauncher.launch(viewModel.phoneAppSettingsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de teléfono") }
-                    Button(onClick = { settingsLauncher.launch(viewModel.appDetailsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de la app") }
+                    Button(onClick = { safeLaunch(viewModel.defaultAppsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir apps predeterminadas") }
+                    Button(onClick = { safeLaunch(viewModel.phoneAppSettingsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de teléfono") }
+                    Button(onClick = { safeLaunch(viewModel.appDetailsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de la app") }
                     Button(
                         onClick = viewModel::refreshRecentCallAlertEvents,
                         modifier = Modifier.fillMaxWidth()
@@ -258,6 +268,25 @@ fun MainScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis
+                    )
+                    if (uiState.lastCallScreeningEventText == "none yet") {
+                        Text(
+                            text = "Aún no se ha recibido una llamada mediante CallScreeningService. Haz una llamada real desde otro teléfono después de activar el rol.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (uiState.lastFallbackEventText.contains("missing_EXTRA_INCOMING_NUMBER")) {
+                        Text(
+                            text = "PHONE_STATE no entregó el número. Esto es normal en Android moderno sin READ_CALL_LOG y no significa que CallScreeningService esté roto.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = "Checklist: ScamCall MX selected as Call Screening app · Call from another physical phone · Do not test with WhatsApp/VoIP · Test with a number not saved in contacts · Make sure the call reaches the native Phone app.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (uiState.recentCallEventsText.isNotBlank()) {
                         OutlinedTextField(
