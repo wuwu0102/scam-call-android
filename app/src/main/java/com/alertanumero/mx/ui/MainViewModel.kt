@@ -59,6 +59,8 @@ data class MainUiState(
     val localTestMessage: String = "",
     val compatibilityReport: String = "",
     val activation: ActivationUiState = ActivationUiState(),
+    val callScreeningInvoked: Boolean = false,
+    val automaticCallAlertStatus: String = "",
     val lastCallEventText: String = "",
     val recentCallEventsText: String = "",
     val diagnosticNotifyAllCalls: Boolean = false
@@ -203,6 +205,19 @@ class MainViewModel(
 
     fun refreshRecentCallAlertEvents() {
         val events = CallAlertDiagnosticsStore(getApplication()).getRecentEvents()
+        val recent = events.take(10)
+        val hasCallScreeningEvent = recent.any { it.source == "CallScreeningService" }
+        val hasPhoneStateMissingNumber = recent.any {
+            it.source == "PHONE_STATE_CHANGED" && it.reason.contains("missing_EXTRA_INCOMING_NUMBER")
+        }
+        val automaticStatus = when {
+            hasCallScreeningEvent -> "CallScreeningService recibió llamadas en este dispositivo."
+            _uiState.value.activation.roleHeld && hasPhoneStateMissingNumber ->
+                "Este Android no está entregando el número entrante a la app. ScamCall MX no puede comparar la llamada automáticamente en este dispositivo."
+            _uiState.value.activation.roleHeld ->
+                "Permiso activado, pero Android todavía no ha enviado llamadas a ScamCall MX."
+            else -> "Manual lookup only on this device."
+        }
         val text = if (events.isEmpty()) {
             "Sin eventos de llamada registrados todavía."
         } else {
@@ -216,7 +231,15 @@ class MainViewModel(
                     "Timestamp: ${event.timestamp}"
             }
         }
-        _uiState.update { it.copy(recentCallEventsText = text, lastCallEventText = text) }
+        _uiState.update {
+            it.copy(
+                recentCallEventsText = text,
+                lastCallEventText = text,
+                callScreeningInvoked = hasCallScreeningEvent,
+                automaticCallAlertStatus = automaticStatus
+            )
+        }
+        refreshActivationStatus()
     }
 
 
@@ -231,7 +254,9 @@ class MainViewModel(
         helper.showDiagnosticCallSeen("TEST", "Manual test")
     }
 
-    fun manageDefaultAppsIntent(): Intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+    fun defaultAppsIntent(): Intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+
+    fun phoneAppSettingsIntent(): Intent = Intent("android.settings.CALL_SETTINGS")
 
     fun appDetailsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
         data = Uri.fromParts("package", getApplication<Application>().packageName, null)
@@ -334,6 +359,16 @@ class MainViewModel(
             ) == PackageManager.PERMISSION_GRANTED
 
         val callScreeningActive = _uiState.value.activation.callScreeningActive
+        val callScreeningInvoked = _uiState.value.callScreeningInvoked
+        val automaticStatus = _uiState.value.automaticCallAlertStatus.ifBlank { "manual lookup only on this device" }
+        val automaticMode = when {
+            callScreeningInvoked -> "active"
+            _uiState.value.activation.roleHeld && automaticStatus.contains("no está entregando") -> "fallback only no number"
+            _uiState.value.activation.roleHeld -> "role active but not invoked"
+            else -> "manual lookup only on this device"
+        }
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_ACTIVITIES)
+        val overlayRegistered = packageInfo.activities?.any { it.name.endsWith(".CallerIdOverlayActivity") } == true
 
         val report = """
         ScamCall MX - Android compatibility report
@@ -349,7 +384,16 @@ class MainViewModel(
         Last update: ${_uiState.value.lastUpdated}
         Alert mode: notification-based MVP
         READ_CALL_LOG: not requested
+        READ_CONTACTS: not requested
         Call screening active: $callScreeningActive
+        role held: ${_uiState.value.activation.roleHeld}
+        role available: ${_uiState.value.activation.roleAvailable}
+        service declared: ${_uiState.value.activation.serviceDeclared}
+        service permission: ${_uiState.value.activation.servicePermission}
+        callScreeningInvoked: $callScreeningInvoked
+        automaticCallAlertStatus: $automaticStatus
+        Automatic call alert status: $automaticMode
+        overlay activity registered: $overlayRegistered
         Last call event: ${_uiState.value.recentCallEventsText.ifBlank { "(empty)" }}
         CallScreeningService: primary path + PHONE_STATE_CHANGED fallback
     """.trimIndent()

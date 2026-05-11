@@ -26,6 +26,14 @@ Incoming call alerts depend on whether the device exposes the incoming number th
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".telephony.CallerIdOverlayActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.AlertaNumeroMX.CallerId" />
+
 
 
         <service

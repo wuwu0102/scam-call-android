@@ -130,6 +130,20 @@ Main screen now follows the ScamCall MX iOS visual direction while keeping Andro
 - black primary action style, clearer `Resultado` display, and softer error/status text inside cards
 - safe-area aware + scrollable layout for small screens (e.g. Pixel 10)
 
+### Android caller ID limitations
+
+ScamCall MX uses CallScreeningService as the primary Android caller ID path and PHONE_STATE_CHANGED as a fallback.
+
+On some Pixel / Android versions, even when the call screening role is granted, Android may not invoke third-party CallScreeningService for every call. If Android only sends PHONE_STATE_CHANGED without EXTRA_INCOMING_NUMBER, the app cannot compare the incoming call automatically.
+
+Manual lookup and database updates remain available.
+
+The app does not request READ_CALL_LOG or READ_CONTACTS to keep Play Store permission risk lower.
+
+### Caller ID display
+
+When CallScreeningService is invoked and the number matches the local database, ScamCall MX may show a notification and a short caller ID activity. This activity does not block, reject, silence, record, or upload calls.
+
 ## Roadmap
 
 ### Phase 1

@@ -3,7 +3,6 @@ package com.alertanumero.mx.telephony
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.telecom.CallScreeningService.CallResponse
-import android.telecom.PhoneAccount
 import android.util.Log
 import com.alertanumero.mx.data.repository.ScamRepository
 
@@ -21,12 +20,7 @@ class ScamCallScreeningService : CallScreeningService() {
                 return
             }
 
-            val handle = callDetails.handle
-            val rawNumber = if (handle?.scheme == PhoneAccount.SCHEME_TEL) {
-                handle.schemeSpecificPart.orEmpty()
-            } else {
-                ""
-            }
+            val rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty()
             val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
 
             val diagnosticsStore = CallAlertDiagnosticsStore(this)
@@ -38,10 +32,18 @@ class ScamCallScreeningService : CallScreeningService() {
                 reason = "onScreenCall_entered"
             )
 
-            if (CallAlertStore(this).isDiagnosticNotifyAllCallsEnabled()) {
+            val store = CallAlertStore(this)
+            if (store.isDiagnosticNotifyAllCallsEnabled()) {
                 val helper = AlertNotificationHelper(this)
                 helper.ensureChannel()
                 helper.showDiagnosticCallSeen(rawNumber, "CallScreeningService")
+                CallerIdOverlayActivity.start(
+                    context = this,
+                    rawNumber = rawNumber,
+                    label = "Diagnóstico: llamada detectada",
+                    category = "DIAGNOSTIC",
+                    source = "CallScreeningService"
+                )
             }
 
             if (rawNumber.isBlank()) {
@@ -56,7 +58,6 @@ class ScamCallScreeningService : CallScreeningService() {
                 return
             }
 
-            val store = CallAlertStore(this)
             val entry = store.findLocalTestEntry(rawNumber) ?: store.findEntry(rawNumber)
 
             diagnosticsStore.addEvent(
@@ -72,6 +73,13 @@ class ScamCallScreeningService : CallScreeningService() {
                 val helper = AlertNotificationHelper(this)
                 helper.ensureChannel()
                 helper.showCallAlert(rawNumber, entry)
+                CallerIdOverlayActivity.start(
+                    context = this,
+                    rawNumber = rawNumber,
+                    label = entry.label,
+                    category = entry.category.name,
+                    source = "CallScreeningService"
+                )
             }
 
             respondAllow(callDetails)
