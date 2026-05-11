@@ -1,5 +1,6 @@
 package com.alertanumero.mx.telephony
 
+import android.os.Build
 import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.telecom.CallScreeningService.CallResponse
@@ -9,17 +10,31 @@ import com.alertanumero.mx.data.repository.ScamRepository
 class ScamCallScreeningService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
         try {
+            val isAtLeastQ = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
             val rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty()
             val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
-            val callDirection = when (callDetails.callDirection) {
-                Call.Details.DIRECTION_INCOMING -> "INCOMING"
-                Call.Details.DIRECTION_OUTGOING -> "OUTGOING"
-                else -> "UNKNOWN"
+            val callDirectionValue = if (isAtLeastQ) {
+                callDetails.callDirection
+            } else {
+                Call.Details.DIRECTION_INCOMING
+            }
+            val callDirection = if (isAtLeastQ) {
+                when (callDirectionValue) {
+                    Call.Details.DIRECTION_INCOMING -> "INCOMING"
+                    Call.Details.DIRECTION_OUTGOING -> "OUTGOING"
+                    else -> "UNKNOWN"
+                }
+            } else {
+                "ASSUMED_INCOMING_PRE_Q"
             }
             val handleScheme = callDetails.handle?.scheme.orEmpty()
-            val handlePresentation = callDetails.callerNumberVerificationStatus.toString()
-            val isIncoming = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                callDetails.callDirection == Call.Details.DIRECTION_INCOMING
+            val handlePresentation = if (isAtLeastQ) {
+                callDetails.callerNumberVerificationStatus.toString()
+            } else {
+                "N/A_PRE_Q"
+            }
+            val isIncoming = if (isAtLeastQ) {
+                callDirectionValue == Call.Details.DIRECTION_INCOMING
             } else {
                 true
             }
@@ -113,7 +128,7 @@ class ScamCallScreeningService : CallScreeningService() {
             .setSkipCallLog(false)
             .setSkipNotification(false)
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             builder.setSilenceCall(false)
         }
 
