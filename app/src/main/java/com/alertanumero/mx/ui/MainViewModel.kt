@@ -18,6 +18,7 @@ import com.alertanumero.mx.data.repository.ScamRepository
 import com.alertanumero.mx.telephony.AlertNotificationHelper
 import com.alertanumero.mx.telephony.CallAlertDiagnosticsStore
 import com.alertanumero.mx.telephony.CallAlertStore
+import com.alertanumero.mx.telephony.LastCallAlertEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,6 +63,8 @@ data class MainUiState(
     val callScreeningInvoked: Boolean = false,
     val automaticCallAlertStatus: String = "",
     val lastCallEventText: String = "",
+    val lastCallScreeningEventText: String = "none yet",
+    val lastFallbackEventText: String = "none yet",
     val recentCallEventsText: String = "",
     val diagnosticNotifyAllCalls: Boolean = false
 )
@@ -147,15 +150,17 @@ class MainViewModel(
         val roleManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) context.getSystemService(RoleManager::class.java) else null
         val roleAvailable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) roleManager?.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) == true else false
         val roleHeld = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true else false
-        val serviceComponentName = "${context.packageName}/.telephony.ScamCallScreeningService"
+        val expectedServiceClass = "com.alertanumero.mx.telephony.ScamCallScreeningService"
         val servicePermissionRequired = "android.permission.BIND_SCREENING_SERVICE"
         val serviceIntent = Intent("android.telecom.CallScreeningService").setPackage(context.packageName)
         val queriedServices = context.packageManager.queryIntentServices(serviceIntent, PackageManager.GET_META_DATA)
         val declaredServiceInfo = queriedServices.firstOrNull { info ->
-            info.serviceInfo?.name == "com.alertanumero.mx.telephony.ScamCallScreeningService" ||
+            info.serviceInfo?.name == expectedServiceClass ||
                 info.serviceInfo?.name?.endsWith(".ScamCallScreeningService") == true
         }?.serviceInfo
         val serviceDeclared = declaredServiceInfo != null
+        val serviceComponentName = declaredServiceInfo?.let { "${it.packageName}/${it.name}" }
+            ?: "${context.packageName}/$expectedServiceClass"
         val roleActiveButServiceNotInvoked = roleHeld &&
             CallAlertDiagnosticsStore(context)
                 .getRecentEvents()
@@ -187,6 +192,7 @@ class MainViewModel(
             roleActiveButServiceNotInvoked = roleActiveButServiceNotInvoked
         )
         _uiState.update { it.copy(activation = activationState) }
+        refreshRecentCallAlertEvents()
     }
 
     fun callScreeningRoleIntent(): Intent? {
@@ -208,7 +214,11 @@ class MainViewModel(
         val recent = events.take(10)
         val hasCallScreeningEvent = recent.any { it.source == "CallScreeningService" }
         val hasPhoneStateMissingNumber = recent.any {
-            it.source == "PHONE_STATE_CHANGED" && it.reason.contains("missing_EXTRA_INCOMING_NUMBER")
+            (it.source == "PHONE_STATE_CHANGED" || it.source == "PHONE_STATE") && it.reason.contains("missing_EXTRA_INCOMING_NUMBER")
+        }
+        val lastCallScreeningEvent = events.firstOrNull { it.source == "CallScreeningService" }
+        val lastFallbackEvent = events.firstOrNull {
+            it.source == "PHONE_STATE_CHANGED" || it.source == "PHONE_STATE" || it.source == "IncomingCallReceiver"
         }
         val automaticStatus = when {
             hasCallScreeningEvent -> "CallScreeningService recibió llamadas en este dispositivo."
@@ -235,11 +245,16 @@ class MainViewModel(
             it.copy(
                 recentCallEventsText = text,
                 lastCallEventText = text,
+                lastCallScreeningEventText = lastCallScreeningEvent?.let { formatEventLine(it) } ?: "none yet",
+                lastFallbackEventText = lastFallbackEvent?.let { formatEventLine(it) } ?: "none yet",
                 callScreeningInvoked = hasCallScreeningEvent,
                 automaticCallAlertStatus = automaticStatus
             )
         }
-        refreshActivationStatus()
+    }
+
+    private fun formatEventLine(event: LastCallAlertEvent): String {
+        return "${event.source} · ${event.reason} · ${event.rawNumber.ifBlank { "No disponible" }} · ${event.timestamp}"
     }
 
 

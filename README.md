@@ -253,3 +253,18 @@ Users must enable ScamCall MX as the call screening / caller ID app when prompte
 Some calls may not be passed to call screening if the number is private, unavailable, restricted, or already handled differently by the device/phone app.
 
 Users can generate a local compatibility report in the app and send it to the developer. The report is not uploaded automatically.
+
+### Android real-device caller ID test
+
+1. Install the debug APK on the Android phone.
+2. Open the app once.
+3. Grant Call Screening / Caller ID role when requested.
+4. Enable diagnostic notify-all-calls mode in the app.
+5. Add a local test number from another phone.
+6. Call this phone from that number.
+7. Confirm:
+   - role held = yes
+   - screening service declared = yes
+   - last call screening event is updated
+   - notification or caller ID overlay appears
+8. If CallScreeningService has no event but fallback has event, the phone/carrier/ROM may not expose CallScreeningService correctly; keep fallback diagnostics visible.

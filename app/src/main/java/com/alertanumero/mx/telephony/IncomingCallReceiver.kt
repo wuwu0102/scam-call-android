@@ -20,12 +20,12 @@ class IncomingCallReceiver : BroadcastReceiver() {
         if (callAlertStore.isDiagnosticNotifyAllCallsEnabled()) {
             val helper = AlertNotificationHelper(context)
             helper.ensureChannel()
-            helper.showDiagnosticCallSeen(incomingNumber.orEmpty(), "PHONE_STATE_CHANGED")
+            helper.showDiagnosticCallSeen(incomingNumber.orEmpty(), "PHONE_STATE")
         }
 
         if (incomingNumber.isNullOrBlank()) {
             diagnosticsStore.addEvent(
-                source = "PHONE_STATE_CHANGED",
+                source = "PHONE_STATE",
                 rawNumber = "",
                 normalizedNumber = normalizedNumber,
                 matched = false,
@@ -37,7 +37,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
         val entry = callAlertStore.findLocalTestEntry(incomingNumber) ?: callAlertStore.findEntry(incomingNumber)
 
         diagnosticsStore.addEvent(
-            source = "PHONE_STATE_CHANGED",
+            source = "PHONE_STATE",
             rawNumber = incomingNumber,
             normalizedNumber = normalizedNumber,
             matched = entry != null,
