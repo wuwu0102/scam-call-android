@@ -40,6 +40,8 @@ class CallerIdOverlayActivity : ComponentActivity() {
             setTurnScreenOn(true)
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+        window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         closeHandler.postDelayed(closeRunnable, AUTO_CLOSE_MS)
 
         val rawNumber = intent.getStringExtra(EXTRA_RAW_NUMBER).orEmpty()
@@ -70,7 +72,7 @@ class CallerIdOverlayActivity : ComponentActivity() {
         private const val EXTRA_LABEL = "extra_label"
         private const val EXTRA_CATEGORY = "extra_category"
         private const val EXTRA_SOURCE = "extra_source"
-        private const val AUTO_CLOSE_MS = 8_000L
+        private const val AUTO_CLOSE_MS = 12_000L
 
         fun start(context: Context, rawNumber: String, label: String, category: String, source: String) {
             val intent = Intent(context, CallerIdOverlayActivity::class.java).apply {

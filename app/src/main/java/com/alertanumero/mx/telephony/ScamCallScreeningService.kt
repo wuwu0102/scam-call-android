@@ -59,9 +59,8 @@ class ScamCallScreeningService : CallScreeningService() {
 
             val store = CallAlertStore(this)
             val diagnosticModeEnabled = store.isDiagnosticNotifyAllCallsEnabled()
+            val helper = AlertNotificationHelper(this).also { it.ensureChannel() }
             if (diagnosticModeEnabled) {
-                val helper = AlertNotificationHelper(this)
-                helper.ensureChannel()
                 helper.showDiagnosticCallSeen(rawNumber, "CallScreeningService")
             }
 
@@ -97,24 +96,7 @@ class ScamCallScreeningService : CallScreeningService() {
             )
 
             if (entry != null) {
-                val helper = AlertNotificationHelper(this)
-                helper.ensureChannel()
                 helper.showCallAlert(rawNumber, entry)
-                CallerIdOverlayActivity.start(
-                    context = this,
-                    rawNumber = rawNumber,
-                    label = entry.label,
-                    category = entry.category.name,
-                    source = "CallScreeningService"
-                )
-            } else if (diagnosticModeEnabled) {
-                CallerIdOverlayActivity.start(
-                    context = this,
-                    rawNumber = rawNumber,
-                    label = "Diagnóstico: llamada detectada",
-                    category = "DIAGNOSTIC",
-                    source = "CallScreeningService"
-                )
             }
 
             respondAllow(callDetails)
