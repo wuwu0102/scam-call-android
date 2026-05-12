@@ -290,6 +290,11 @@ fun MainScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
+                        text = "En Pixel/Google Phone, la app usa notificaciones visibles durante la llamada porque la pantalla nativa puede cubrir la etiqueta de identificación.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
                         text = "last call screening event: ${uiState.lastCallScreeningEventText}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

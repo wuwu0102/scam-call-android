@@ -3,7 +3,9 @@ package com.alertanumero.mx.telephony
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -25,24 +27,22 @@ class AlertNotificationHelper(private val context: Context) {
 
     fun showCallAlert(rawNumber: String, entry: ScamEntry) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
-        val title = when (entry.category) {
-            ScamCategory.SUSPICIOUS -> "⚠️ Llamada sospechosa detectada"
-            ScamCategory.TELEMARKETING -> "📢 Publicidad / Telemarketing"
-            ScamCategory.COLLECTION -> "💳 Cobranza detectada"
-        }
-        var bigText = when (entry.category) {
-            ScamCategory.SUSPICIOUS -> "ScamCall MX detectó un número reportado como llamada sospechosa: $rawNumber. Evita compartir datos personales."
-            ScamCategory.TELEMARKETING -> "ScamCall MX detectó un número reportado como publicidad o telemarketing: $rawNumber."
-            ScamCategory.COLLECTION -> "ScamCall MX detectó un número reportado como cobranza: $rawNumber. Verifica la identidad antes de compartir información."
-        }
-        if (entry.label.isNotBlank() && entry.label != entry.category.displayLabel) bigText += " Detalle: ${entry.label}"
+        val body = formatBody(
+            rawNumber = rawNumber,
+            category = entry.category.name,
+            label = entry.label,
+            source = "CallScreeningService"
+        )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(title)
-            .setContentText("Número: $rawNumber. Tipo: ${entry.category.displayLabel}.")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+            .setContentTitle("Alerta de llamada")
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setFullScreenIntent(buildOverlayPendingIntent(rawNumber, entry.label, entry.category.name, "CallScreeningService"), true)
             .setAutoCancel(true)
             .build()
         NotificationManagerCompat.from(context).notify(rawNumber.hashCode(), notification)
@@ -52,17 +52,21 @@ class AlertNotificationHelper(private val context: Context) {
     fun showDiagnosticCallSeen(rawNumber: String, source: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
-        val displayNumber = rawNumber.ifBlank { "No disponible" }
+        val body = formatBody(
+            rawNumber = rawNumber,
+            category = "DIAGNOSTIC",
+            label = "Diagnóstico: llamada detectada",
+            source = source
+        )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Diagnóstico ScamCall MX")
-            .setContentText("Llamada detectada por $source. Número: $displayNumber")
-            .setStyle(
-                NotificationCompat.BigTextStyle().bigText(
-                    "Llamada detectada por $source. Número: $displayNumber"
-                )
-            )
+            .setContentTitle("Diagnóstico de llamada")
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setFullScreenIntent(buildOverlayPendingIntent(rawNumber, "Diagnóstico: llamada detectada", "DIAGNOSTIC", source), true)
             .setAutoCancel(true)
             .build()
 
@@ -71,5 +75,26 @@ class AlertNotificationHelper(private val context: Context) {
 
     fun showSuspiciousCallAlert(rawNumber: String) {
         showCallAlert(rawNumber, ScamEntry(rawNumber, ScamCategory.SUSPICIOUS, ScamCategory.SUSPICIOUS.displayLabel))
+    }
+
+    private fun formatBody(rawNumber: String, category: String, label: String, source: String): String {
+        val displayNumber = rawNumber.ifBlank { "No disponible" }
+        val displayLabel = label.ifBlank { "Sin detalle" }
+        return "Número: $displayNumber · Categoría: $category · Etiqueta: $displayLabel · source = $source"
+    }
+
+    private fun buildOverlayPendingIntent(rawNumber: String, label: String, category: String, source: String): PendingIntent {
+        val intent = Intent(context, CallerIdOverlayActivity::class.java).apply {
+            putExtra("extra_raw_number", rawNumber)
+            putExtra("extra_label", label)
+            putExtra("extra_category", category)
+            putExtra("extra_source", source)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+            (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        return PendingIntent.getActivity(context, ("overlay_" + rawNumber + category).hashCode(), intent, flags)
     }
 }
