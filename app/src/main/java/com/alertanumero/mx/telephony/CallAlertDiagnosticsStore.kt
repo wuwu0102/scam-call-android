@@ -75,6 +75,10 @@ class CallAlertDiagnosticsStore(context: Context) {
 
     fun getRecentEvents(): List<LastCallAlertEvent> = readEvents()
 
+    fun clearEvents() {
+        prefs.edit().remove("call_alert_events_json").apply()
+    }
+
     private fun readEvents(): List<LastCallAlertEvent> {
         val raw = prefs.getString("call_alert_events_json", null) ?: return emptyList()
         val array = runCatching { JSONArray(raw) }.getOrNull() ?: return emptyList()

@@ -65,6 +65,12 @@ class ScamCallScreeningService : CallScreeningService() {
             }
 
             if (rawNumber.isBlank()) {
+                if (diagnosticModeEnabled) {
+                    helper.showDiagnosticCallSeen(
+                        "CallScreeningService activo, pero Android no entregó el número",
+                        "CallScreeningService"
+                    )
+                }
                 diagnosticsStore.addEvent(
                     source = "CallScreeningService",
                     rawNumber = "",

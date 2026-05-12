@@ -281,6 +281,10 @@ fun MainScreen(viewModel: MainViewModel) {
                         onClick = viewModel::showTestNotification,
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("Probar notificación") }
+                    Button(
+                        onClick = viewModel::clearDiagnosticEvents,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Limpiar eventos de prueba") }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -306,12 +310,39 @@ fun MainScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "last call screening event: ${uiState.lastCallScreeningEventText}",
+                        text = "A. Real caller ID path",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "last CallScreeningService event: ${uiState.lastCallScreeningEventText}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Text(
+                        text = "B. Fallback only",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "PHONE_STATE detected: ${if (uiState.fallbackPhoneStateDetected) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "number available: ${if (uiState.fallbackNumberAvailable) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (uiState.fallbackOnlyMessage.isNotBlank()) {
+                        Text(
+                            text = uiState.fallbackOnlyMessage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Text(
                         text = "last fallback event: ${uiState.lastFallbackEventText}",
                         style = MaterialTheme.typography.bodySmall,

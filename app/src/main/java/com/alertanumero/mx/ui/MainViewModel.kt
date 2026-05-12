@@ -74,6 +74,9 @@ data class MainUiState(
     val lastCallEventText: String = "",
     val lastCallScreeningEventText: String = "none yet",
     val lastFallbackEventText: String = "none yet",
+    val fallbackPhoneStateDetected: Boolean = false,
+    val fallbackNumberAvailable: Boolean = false,
+    val fallbackOnlyMessage: String = "",
     val recentCallEventsText: String = "",
     val diagnosticNotifyAllCalls: Boolean = false
 )
@@ -246,6 +249,8 @@ class MainViewModel(
         val lastFallbackEvent = events.firstOrNull {
             it.source == "PHONE_STATE_CHANGED" || it.source == "PHONE_STATE" || it.source == "IncomingCallReceiver"
         }
+        val fallbackPhoneStateDetected = lastFallbackEvent != null
+        val fallbackNumberAvailable = lastFallbackEvent?.rawNumber?.isNotBlank() == true
         val automaticStatus = when {
             hasCallScreeningEvent -> "CallScreeningService recibió llamadas en este dispositivo."
             _uiState.value.activation.roleHeld && hasPhoneStateMissingNumber ->
@@ -269,12 +274,18 @@ class MainViewModel(
                 "Timestamp: ${event.timestamp}"
             }
         }
+        val fallbackOnlyMessage = if (!hasCallScreeningEvent && fallbackPhoneStateDetected) {
+            "Esto todavía no es identificación automática. Android solo informó un cambio de llamada, pero no entregó la llamada a CallScreeningService."
+        } else ""
         _uiState.update {
             it.copy(
                 recentCallEventsText = text,
                 lastCallEventText = text,
                 lastCallScreeningEventText = lastCallScreeningEvent?.let { formatEventLine(it) } ?: "none yet",
                 lastFallbackEventText = lastFallbackEvent?.let { formatEventLine(it) } ?: "none yet",
+                fallbackPhoneStateDetected = fallbackPhoneStateDetected,
+                fallbackNumberAvailable = fallbackNumberAvailable,
+                fallbackOnlyMessage = fallbackOnlyMessage,
                 callScreeningInvoked = hasCallScreeningEvent,
                 automaticCallAlertStatus = automaticStatus
             )
@@ -289,6 +300,11 @@ class MainViewModel(
     fun setDiagnosticNotifyAllCalls(enabled: Boolean) {
         callAlertStore.setDiagnosticNotifyAllCalls(enabled)
         _uiState.update { it.copy(diagnosticNotifyAllCalls = enabled) }
+    }
+
+    fun clearDiagnosticEvents() {
+        CallAlertDiagnosticsStore(getApplication()).clearEvents()
+        refreshRecentCallAlertEvents()
     }
 
     fun showTestNotification() {
