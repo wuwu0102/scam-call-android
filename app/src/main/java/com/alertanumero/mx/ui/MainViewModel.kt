@@ -417,55 +417,41 @@ class MainViewModel(
 
     fun generateCompatibilityReport() {
         val context = getApplication<Application>()
-        val phoneStateGranted = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.READ_PHONE_STATE
-        ) == PackageManager.PERMISSION_GRANTED
-
         val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
 
-        val callScreeningActive = _uiState.value.activation.callScreeningActive
-        val callScreeningInvoked = _uiState.value.callScreeningInvoked
-        val automaticStatus = _uiState.value.automaticCallAlertStatus.ifBlank { "manual lookup only on this device" }
-        val automaticMode = when {
-            callScreeningInvoked -> "active"
-            _uiState.value.activation.roleHeld && automaticStatus.contains("no está entregando") -> "fallback only no number"
-            _uiState.value.activation.roleHeld -> "role active but not invoked"
-            else -> "manual lookup only on this device"
-        }
-        val packageInfo = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_ACTIVITIES)
-        val overlayRegistered = packageInfo.activities?.any { it.name.endsWith(".CallerIdOverlayActivity") } == true
+        val activation = _uiState.value.activation
+        val lastCallScreeningEvent = _uiState.value.lastCallScreeningEventText
+        val lastPhoneStateEvent = _uiState.value.lastFallbackEventText
 
         val report = """
-        ScamCall MX - Android compatibility report
+        ScamCall MX - Android diagnostic report
         Brand: ${Build.BRAND}
         Manufacturer: ${Build.MANUFACTURER}
         Model: ${Build.MODEL}
-        Device: ${Build.DEVICE}
-        Android SDK: ${Build.VERSION.SDK_INT}
-        Android release: ${Build.VERSION.RELEASE}
-        READ_PHONE_STATE granted: $phoneStateGranted
-        POST_NOTIFICATIONS granted: $notificationGranted
+        Android version: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})
+        default dialer package: ${activation.defaultDialerPackage}
+        role held: ${if (activation.roleHeld) "yes" else "no"}
+        CallScreeningService active: ${if (activation.callScreeningActive) "yes" else "no"}
+        last CallScreeningService event: $lastCallScreeningEvent
+        last PHONE_STATE event: $lastPhoneStateEvent
+        notification permission: ${if (notificationGranted) "yes" else "no"}
+        full-screen alert permission: ${if (activation.fullScreenAlertPermissionGranted) "yes" else "no"}
+        
+        Routing notes:
+        - CallScreeningService = formal caller ID path
+        - PHONE_STATE = fallback call-state detection only (not formal caller ID success)
+        
+        Extra app status:
         Database records: ${_uiState.value.recordCount}
         Last update: ${_uiState.value.lastUpdated}
-        Alert mode: notification-based MVP
-        READ_CALL_LOG: not requested
-        READ_CONTACTS: not requested
-        Call screening active: $callScreeningActive
-        role held: ${_uiState.value.activation.roleHeld}
-        role available: ${_uiState.value.activation.roleAvailable}
-        service declared: ${_uiState.value.activation.serviceDeclared}
-        service permission: ${_uiState.value.activation.servicePermission}
-        callScreeningInvoked: $callScreeningInvoked
-        automaticCallAlertStatus: $automaticStatus
-        Automatic call alert status: $automaticMode
-        overlay activity registered: $overlayRegistered
-        Last call event: ${_uiState.value.recentCallEventsText.ifBlank { "(empty)" }}
-        CallScreeningService: primary path + PHONE_STATE_CHANGED fallback
+        role available: ${if (activation.roleAvailable) "yes" else "no"}
+        service declared: ${if (activation.serviceDeclared) "yes" else "no"}
+        service permission: ${activation.servicePermission}
+        automaticCallAlertStatus: ${_uiState.value.automaticCallAlertStatus.ifBlank { "manual lookup only on this device" }}
     """.trimIndent()
 
         _uiState.update { it.copy(compatibilityReport = report) }

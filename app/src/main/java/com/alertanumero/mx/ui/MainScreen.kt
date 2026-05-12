@@ -295,12 +295,22 @@ fun MainScreen(viewModel: MainViewModel) {
                             onCheckedChange = viewModel::setDiagnosticNotifyAllCalls
                         )
                         Text(
-                            text = "Modo diagnóstico: notificar cualquier llamada",
+                            text = "Modo diagnóstico (opcional): notificar cualquier llamada",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
                     Text(
+                        text = "Predeterminado: apagado. Actívalo solo si la identificación de llamadas falla en pruebas reales.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
                         text = "Solo para pruebas. Muestra una notificación aunque el número no esté en la base de datos.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Después de activar Caller ID, se recomienda reiniciar el teléfono una vez para que Google Phone / Android Telecom vuelva a enlazar CallScreeningService.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -315,6 +325,11 @@ fun MainScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
+                        text = "CallScreeningService = ruta oficial de identificación de llamadas (éxito real de Caller ID).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
                         text = "last CallScreeningService event: ${uiState.lastCallScreeningEventText}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -325,6 +340,11 @@ fun MainScreen(viewModel: MainViewModel) {
                         text = "B. Fallback only",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "PHONE_STATE = ruta de respaldo: solo detecta que hubo llamada, no confirma identificación oficial.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "PHONE_STATE detected: ${if (uiState.fallbackPhoneStateDetected) "yes" else "no"}",
@@ -423,7 +443,7 @@ fun MainScreen(viewModel: MainViewModel) {
             item {
                 InfoCard(title = "Reporte de compatibilidad", subtitle = "Ayuda a mejorar la detección en Android") {
                     Text("Si las alertas no aparecen durante llamadas entrantes, genera este reporte y envíalo al desarrollador. No se sube automáticamente.", style = MaterialTheme.typography.bodySmall)
-                    Button(onClick = viewModel::generateCompatibilityReport, modifier = Modifier.fillMaxWidth()) { Text("Generar reporte") }
+                    Button(onClick = viewModel::generateCompatibilityReport, modifier = Modifier.fillMaxWidth()) { Text("Generar reporte diagnóstico (1 clic)") }
                     if (uiState.compatibilityReport.isNotBlank()) {
                         OutlinedTextField(value = uiState.compatibilityReport, onValueChange = {}, modifier = Modifier.fillMaxWidth(), readOnly = true, label = { Text("Reporte") })
                     }
