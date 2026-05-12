@@ -58,17 +58,11 @@ class ScamCallScreeningService : CallScreeningService() {
             }
 
             val store = CallAlertStore(this)
-            if (store.isDiagnosticNotifyAllCallsEnabled()) {
+            val diagnosticModeEnabled = store.isDiagnosticNotifyAllCallsEnabled()
+            if (diagnosticModeEnabled) {
                 val helper = AlertNotificationHelper(this)
                 helper.ensureChannel()
                 helper.showDiagnosticCallSeen(rawNumber, "CallScreeningService")
-                CallerIdOverlayActivity.start(
-                    context = this,
-                    rawNumber = rawNumber,
-                    label = "Diagnóstico: llamada detectada",
-                    category = "DIAGNOSTIC",
-                    source = "CallScreeningService"
-                )
             }
 
             if (rawNumber.isBlank()) {
@@ -111,6 +105,14 @@ class ScamCallScreeningService : CallScreeningService() {
                     rawNumber = rawNumber,
                     label = entry.label,
                     category = entry.category.name,
+                    source = "CallScreeningService"
+                )
+            } else if (diagnosticModeEnabled) {
+                CallerIdOverlayActivity.start(
+                    context = this,
+                    rawNumber = rawNumber,
+                    label = "Diagnóstico: llamada detectada",
+                    category = "DIAGNOSTIC",
                     source = "CallScreeningService"
                 )
             }

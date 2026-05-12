@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.alertanumero.mx.ui.theme.AlertaNumeroMXTheme
 
@@ -85,10 +86,10 @@ class CallerIdOverlayActivity : ComponentActivity() {
         }
 
         private fun categoryLabel(category: String): String = when (category) {
-            "SUSPICIOUS" -> "Llamada sospechosa"
-            "TELEMARKETING" -> "Publicidad / Telemarketing"
-            "COLLECTION" -> "Cobranza"
-            "DIAGNOSTIC" -> "Diagnóstico"
+            "SUSPICIOUS" -> "LLAMADA SOSPECHOSA"
+            "TELEMARKETING" -> "PUBLICIDAD"
+            "COLLECTION" -> "COBRANZA"
+            "DIAGNOSTIC" -> "DIAGNÓSTICO"
             else -> category.ifBlank { "Sin categoría" }
         }
     }
@@ -116,8 +117,14 @@ private fun CallerIdOverlayContent(
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("ScamCall MX", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(
+                    categoryLabel,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Text("Número: ${rawNumber.ifBlank { "No disponible" }}", style = MaterialTheme.typography.bodyLarge)
-                Text("Categoría: $categoryLabel", style = MaterialTheme.typography.bodyLarge)
                 Text("Detalle: ${label.ifBlank { "Sin detalle" }}", style = MaterialTheme.typography.bodyMedium)
                 Text("Fuente: ${source.ifBlank { "N/A" }}", style = MaterialTheme.typography.bodySmall)
                 Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) { Text("Cerrar") }
