@@ -218,6 +218,17 @@ fun MainScreen(viewModel: MainViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Text(
+                        text = "full-screen alert permission: ${if (uiState.activation.fullScreenAlertPermissionGranted) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (!uiState.activation.fullScreenAlertPermissionGranted) {
+                        Button(
+                            onClick = { safeLaunch(viewModel.fullScreenIntentSettingsIntent()) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Activar alerta en pantalla completa") }
+                    }
                     if (uiState.activation.roleHeld && !uiState.callScreeningInvoked) {
                         Text(
                             text = "El rol está activo, pero aún no se ha registrado una llamada real mediante CallScreeningService.",

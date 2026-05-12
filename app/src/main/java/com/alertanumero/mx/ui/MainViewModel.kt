@@ -39,6 +39,7 @@ data class ActivationUiState(
     val serviceDeclared: Boolean = false,
     val servicePermission: String = "",
     val serviceExported: Boolean = false,
+    val fullScreenAlertPermissionGranted: Boolean = true,
     val serviceComponentName: String = "",
     val packageName: String = "",
     val appLabel: String = "",
@@ -178,6 +179,7 @@ class MainViewModel(
         val telecomManager = context.getSystemService(TelecomManager::class.java)
         val defaultDialerPackage = telecomManager?.defaultDialerPackage ?: "unknown"
         val isGoogleDialerDefault = defaultDialerPackage == "com.google.android.dialer"
+        val fullScreenAlertPermissionGranted = AlertNotificationHelper(context).canUseFullScreenIntent()
         val roleActiveButServiceNotInvoked = roleHeld &&
             CallAlertDiagnosticsStore(context)
                 .getRecentEvents()
@@ -204,6 +206,7 @@ class MainViewModel(
             serviceDeclared = serviceDeclared,
             servicePermission = declaredServiceInfo?.permission ?: servicePermissionRequired,
             serviceExported = serviceExported,
+            fullScreenAlertPermissionGranted = fullScreenAlertPermissionGranted,
             serviceComponentName = serviceComponentName,
             packageName = context.packageName,
             appLabel = appLabel,
@@ -328,6 +331,16 @@ class MainViewModel(
         return candidates.filter { intent ->
             runCatching { intent.resolveActivity(context.packageManager) != null }.getOrDefault(false)
         }
+    }
+
+    fun fullScreenIntentSettingsIntent(): Intent? {
+        val context = getApplication<Application>()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return null
+        val packageName = context.packageName
+        val intent = Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT).apply {
+            data = Uri.parse("package:$packageName")
+        }
+        return if (intent.resolveActivity(context.packageManager) != null) intent else null
     }
 
     fun refreshDatabase() {

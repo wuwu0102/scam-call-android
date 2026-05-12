@@ -15,12 +15,13 @@ import com.alertanumero.mx.data.repository.ScamCategory
 import com.alertanumero.mx.data.repository.ScamEntry
 
 class AlertNotificationHelper(private val context: Context) {
-    companion object { const val CHANNEL_ID = "scam_call_alerts" }
+    companion object { const val CHANNEL_ID = "incoming_call_alerts" }
 
     fun ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(CHANNEL_ID, "Alertas de llamadas sospechosas", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "Avisos cuando ScamCall MX detecta números sospechosos"
+            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
         }
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
@@ -34,18 +35,22 @@ class AlertNotificationHelper(private val context: Context) {
             source = "CallScreeningService"
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val fullScreenIntent = buildOverlayPendingIntent(rawNumber, entry.label, entry.category.name, "CallScreeningService")
+        val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Alerta de llamada")
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setFullScreenIntent(buildOverlayPendingIntent(rawNumber, entry.label, entry.category.name, "CallScreeningService"), true)
             .setAutoCancel(true)
-            .build()
-        NotificationManagerCompat.from(context).notify(rawNumber.hashCode(), notification)
+        if (canUseFullScreenIntent()) {
+            notificationBuilder.setFullScreenIntent(fullScreenIntent, true)
+        } else {
+            notificationBuilder.setContentText("$body · Activa la alerta en pantalla completa")
+        }
+        NotificationManagerCompat.from(context).notify(rawNumber.hashCode(), notificationBuilder.build())
     }
 
 
@@ -58,19 +63,22 @@ class AlertNotificationHelper(private val context: Context) {
             label = "Diagnóstico: llamada detectada",
             source = source
         )
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val fullScreenIntent = buildOverlayPendingIntent(rawNumber, "Diagnóstico: llamada detectada", "DIAGNOSTIC", source)
+        val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Diagnóstico de llamada")
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setFullScreenIntent(buildOverlayPendingIntent(rawNumber, "Diagnóstico: llamada detectada", "DIAGNOSTIC", source), true)
             .setAutoCancel(true)
-            .build()
-
-        NotificationManagerCompat.from(context).notify(("diag_" + source + rawNumber).hashCode(), notification)
+        if (canUseFullScreenIntent()) {
+            notificationBuilder.setFullScreenIntent(fullScreenIntent, true)
+        } else {
+            notificationBuilder.setContentText("$body · Activa la alerta en pantalla completa")
+        }
+        NotificationManagerCompat.from(context).notify(("diag_" + source + rawNumber).hashCode(), notificationBuilder.build())
     }
 
     fun showSuspiciousCallAlert(rawNumber: String) {
@@ -96,5 +104,11 @@ class AlertNotificationHelper(private val context: Context) {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or
             (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         return PendingIntent.getActivity(context, ("overlay_" + rawNumber + category).hashCode(), intent, flags)
+    }
+
+    fun canUseFullScreenIntent(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+        val manager = context.getSystemService(NotificationManager::class.java)
+        return runCatching { manager.canUseFullScreenIntent() }.getOrDefault(false)
     }
 }
