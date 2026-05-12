@@ -62,7 +62,10 @@ data class MainUiState(
     val statusMessage: String = "Listo para actualizar base de datos.",
     val sourceUrl: String = "",
     val localTestInput: String = "",
+    val localTestRawInput: String = "",
     val localTestMessage: String = "",
+    val localTestNormalized: String = "",
+    val localTestAliases: String = "",
     val compatibilityReport: String = "",
     val activation: ActivationUiState = ActivationUiState(),
     val callScreeningInvoked: Boolean = false,
@@ -100,15 +103,17 @@ class MainViewModel(
     }
 
     fun onLocalTestNumberChanged(value: String) {
-        _uiState.update { it.copy(localTestInput = value) }
+        _uiState.update { it.copy(localTestInput = value, localTestRawInput = value) }
     }
 
     fun saveLocalTestNumber(): Boolean {
-        val normalized = repository.normalizePhone(_uiState.value.localTestInput)
+        val rawInput = _uiState.value.localTestInput
+        val normalized = repository.normalizePhone(rawInput)
         if (normalized == null) {
-            _uiState.update { it.copy(localTestMessage = "Ingresa un número válido de 10 dígitos en México.") }
+            _uiState.update { it.copy(localTestMessage = "Ingresa un número válido.") }
             return false
         }
+        val aliases = repository.lookupAliases(rawInput)
 
         val expiry = System.currentTimeMillis() + 24L * 60L * 60L * 1000L
         prefs.edit()
@@ -119,7 +124,10 @@ class MainViewModel(
         _uiState.update {
             it.copy(
                 localTestInput = normalized,
-                localTestMessage = "Número de prueba guardado localmente por 24 horas."
+                localTestRawInput = rawInput,
+                localTestMessage = "Prueba local guardada. Número normalizado: $normalized",
+                localTestNormalized = normalized,
+                localTestAliases = aliases.joinToString(", ")
             )
         }
         callAlertStore.saveLocalTestNumber(normalized)
@@ -363,8 +371,9 @@ class MainViewModel(
 
     fun search() {
         val normalized = repository.normalizePhone(_uiState.value.phoneInput)
+        val aliases = repository.lookupAliases(_uiState.value.phoneInput)
         val localEntry = if (normalized != null) callAlertStore.findLocalTestEntry(normalized) else null
-        val remoteEntry = if (normalized != null) cachedEntries[normalized] else null
+        val remoteEntry = aliases.firstNotNullOfOrNull { alias -> cachedEntries[alias] }
 
         _uiState.update {
             when {
