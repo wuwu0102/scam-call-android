@@ -184,6 +184,40 @@ fun MainScreen(viewModel: MainViewModel) {
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Text(
+                        text = "default dialer package: ${uiState.activation.defaultDialerPackage}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (!uiState.activation.isGoogleDialerDefault) {
+                        Text(
+                            text = "Advertencia: se recomienda usar com.google.android.dialer como app de teléfono predeterminada en Pixel.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFEF6C00)
+                        )
+                    }
+                    Text(
+                        text = "role available: ${if (uiState.activation.roleAvailable) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "role held by this app: ${if (uiState.activation.roleHeld) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "queryIntentServices(CallScreeningService): ${uiState.activation.queryIntentServicesCount}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "service exported: ${if (uiState.activation.serviceExported) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     if (uiState.activation.roleHeld && !uiState.callScreeningInvoked) {
                         Text(
                             text = "El rol está activo, pero aún no se ha registrado una llamada real mediante CallScreeningService.",
@@ -220,7 +254,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         ) { Text("Activar identificación de llamadas") }
                     } else {
                         Text(
-                            text = "Identificación de llamadas activada",
+                            text = "Call Screening role already granted",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -278,7 +312,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     }
                     if (uiState.lastFallbackEventText.contains("missing_EXTRA_INCOMING_NUMBER")) {
                         Text(
-                            text = "PHONE_STATE no entregó el número. Esto es normal en Android moderno sin READ_CALL_LOG y no significa que CallScreeningService esté roto.",
+                            text = "Google Phone has not bound the CallScreeningService yet.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

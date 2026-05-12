@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.telecom.TelecomManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -37,9 +38,13 @@ data class ActivationUiState(
     val roleHeld: Boolean = false,
     val serviceDeclared: Boolean = false,
     val servicePermission: String = "",
+    val serviceExported: Boolean = false,
     val serviceComponentName: String = "",
     val packageName: String = "",
     val appLabel: String = "",
+    val defaultDialerPackage: String = "unknown",
+    val isGoogleDialerDefault: Boolean = false,
+    val queryIntentServicesCount: Int = 0,
     val roleActiveButServiceNotInvoked: Boolean = false
 )
 
@@ -159,8 +164,12 @@ class MainViewModel(
                 info.serviceInfo?.name?.endsWith(".ScamCallScreeningService") == true
         }?.serviceInfo
         val serviceDeclared = declaredServiceInfo != null
+        val serviceExported = declaredServiceInfo?.exported == true
         val serviceComponentName = declaredServiceInfo?.let { "${it.packageName}/${it.name}" }
             ?: "${context.packageName}/$expectedServiceClass"
+        val telecomManager = context.getSystemService(TelecomManager::class.java)
+        val defaultDialerPackage = telecomManager?.defaultDialerPackage ?: "unknown"
+        val isGoogleDialerDefault = defaultDialerPackage == "com.google.android.dialer"
         val roleActiveButServiceNotInvoked = roleHeld &&
             CallAlertDiagnosticsStore(context)
                 .getRecentEvents()
@@ -170,7 +179,7 @@ class MainViewModel(
         val appLabel = context.packageManager.getApplicationLabel(context.applicationInfo).toString()
 
         val detailText = when {
-            roleActiveButServiceNotInvoked -> "CallScreening role is active, but Android has not invoked the service yet."
+            roleActiveButServiceNotInvoked -> "Google Phone has not bound the CallScreeningService yet."
             callScreeningActive -> "Protección activa con identificación de llamadas."
             notificationGranted -> "Activa parcialmente. Para mejorar la detección, activa ScamCall MX como app de identificación y filtro de llamadas."
             else -> "Permite notificaciones y activa identificación de llamadas."
@@ -186,9 +195,13 @@ class MainViewModel(
             roleHeld = roleHeld,
             serviceDeclared = serviceDeclared,
             servicePermission = declaredServiceInfo?.permission ?: servicePermissionRequired,
+            serviceExported = serviceExported,
             serviceComponentName = serviceComponentName,
             packageName = context.packageName,
             appLabel = appLabel,
+            defaultDialerPackage = defaultDialerPackage,
+            isGoogleDialerDefault = isGoogleDialerDefault,
+            queryIntentServicesCount = queriedServices.size,
             roleActiveButServiceNotInvoked = roleActiveButServiceNotInvoked
         )
         _uiState.update { it.copy(activation = activationState) }
@@ -199,10 +212,12 @@ class MainViewModel(
         val context = getApplication<Application>()
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = context.getSystemService(RoleManager::class.java)
-            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
-                roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
-            } else {
+            if (roleManager == null || !roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
                 null
+            } else if (roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
+                null
+            } else {
+                roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
             }
         } else {
             null
@@ -225,7 +240,7 @@ class MainViewModel(
             _uiState.value.activation.roleHeld && hasPhoneStateMissingNumber ->
                 "El rol está activo, pero aún no se ha registrado una llamada real mediante CallScreeningService."
             _uiState.value.activation.roleHeld ->
-                "Permiso activado, pero Android todavía no ha enviado llamadas a ScamCall MX."
+                "Google Phone has not bound the CallScreeningService yet."
             else -> "Manual lookup only on this device."
         }
         val text = if (events.isEmpty()) {
