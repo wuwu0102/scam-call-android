@@ -3,6 +3,7 @@ package com.alertanumero.mx.ui
 import android.app.Application
 import android.Manifest
 import android.app.role.RoleManager
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -311,6 +312,36 @@ class MainViewModel(
         val helper = AlertNotificationHelper(getApplication())
         helper.ensureChannel()
         helper.showDiagnosticCallSeen("TEST", "Manual test")
+    }
+
+    fun openReactivationSettingsIntent(): Intent {
+        val context = getApplication<Application>()
+        val callScreeningIntent = Intent("android.settings.CALL_SCREENING_SETTINGS")
+        if (callScreeningIntent.resolveActivity(context.packageManager) != null) return callScreeningIntent
+
+        val defaultAppsIntent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+        if (defaultAppsIntent.resolveActivity(context.packageManager) != null) return defaultAppsIntent
+
+        return appDetailsIntent()
+    }
+
+    fun refreshCallScreeningComponent(): Boolean {
+        val context = getApplication<Application>()
+        val component = ComponentName(context, "com.alertanumero.mx.telephony.ScamCallScreeningService")
+        val success = runCatching {
+            context.packageManager.setComponentEnabledSetting(
+                component,
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP
+            )
+            context.packageManager.setComponentEnabledSetting(
+                component,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP
+            )
+        }.isSuccess
+        refreshActivationStatus()
+        return success
     }
 
     fun defaultAppsIntent(): Intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)

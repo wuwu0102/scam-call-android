@@ -51,6 +51,7 @@ fun MainScreen(viewModel: MainViewModel) {
     val lifecycleOwner = LocalLifecycleOwner.current
     var showActivationGuide by remember { mutableStateOf(false) }
     var showLocalSavedDialog by remember { mutableStateOf(false) }
+    var showAdvancedDiagnostics by remember { mutableStateOf(false) }
 
     val settingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.refreshActivationStatus()
@@ -128,119 +129,90 @@ fun MainScreen(viewModel: MainViewModel) {
             }
 
             item {
-                InfoCard(title = "Alertas por notificación", subtitle = "Estado del dispositivo") {
-                    Text(
-                        text = uiState.activation.statusText,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (uiState.activation.isActive) Color(0xFF2E7D32) else Color(0xFFEF6C00),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = if (uiState.activation.roleHeld && !uiState.callScreeningInvoked) {
-                            "Permiso activado. La búsqueda manual y la base de datos están activas. La alerta automática durante llamadas depende del sistema del teléfono."
-                        } else {
-                            uiState.activation.detailText
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "CallScreeningService: ${if (uiState.activation.callScreeningActive) "active" else "inactive"}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "service declared: ${if (uiState.activation.serviceDeclared) "yes" else "no"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "service permission: ${uiState.activation.servicePermission}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "role held: ${if (uiState.activation.roleHeld) "yes" else "no"} · role available: ${if (uiState.activation.roleAvailable) "yes" else "no"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "component: ${uiState.activation.serviceComponentName}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "package: ${uiState.activation.packageName} · app: ${uiState.activation.appLabel}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "default dialer package: ${uiState.activation.defaultDialerPackage}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (!uiState.activation.isGoogleDialerDefault) {
-                        Text(
-                            text = "Advertencia: se recomienda usar com.google.android.dialer como app de teléfono predeterminada en Pixel.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFEF6C00)
-                        )
+                InfoCard(title = "Activación de llamadas", subtitle = "Sigue estos 4 pasos") {
+                    val notificationReady = uiState.activation.isActive
+                    val testStatus = when {
+                        uiState.callScreeningInvoked -> "Detectado"
+                        uiState.fallbackPhoneStateDetected -> "Solo PHONE_STATE"
+                        else -> "Esperando llamada real"
                     }
-                    Text(
-                        text = "role available: ${if (uiState.activation.roleAvailable) "yes" else "no"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "role held by this app: ${if (uiState.activation.roleHeld) "yes" else "no"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "queryIntentServices(CallScreeningService): ${uiState.activation.queryIntentServicesCount}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "service exported: ${if (uiState.activation.serviceExported) "yes" else "no"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "full-screen alert permission: ${if (uiState.activation.fullScreenAlertPermissionGranted) "yes" else "no"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (!uiState.activation.fullScreenAlertPermissionGranted) {
+                    Text("Permiso de notificaciones: ${if (notificationReady) "Listo" else "Falta"}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Caller ID: ${if (uiState.activation.roleHeld) "Listo" else "Falta"}", style = MaterialTheme.typography.bodyMedium)
+                    Text("Estado de prueba: $testStatus", style = MaterialTheme.typography.bodyMedium)
+                    Text("Paso 1 — Permiso de notificaciones", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    if (notificationReady) {
+                        Text("Notificaciones activadas", style = MaterialTheme.typography.bodySmall, color = Color(0xFF2E7D32))
+                    } else {
+                        Button(onClick = { showActivationGuide = true }, modifier = Modifier.fillMaxWidth()) { Text("Activar notificaciones") }
+                    }
+                    Text("Paso 2 — Identificación de llamadas", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    if (uiState.activation.roleHeld) {
+                        Text("Listo", style = MaterialTheme.typography.bodySmall, color = Color(0xFF2E7D32))
+                    } else {
                         Button(
-                            onClick = { safeLaunch(viewModel.fullScreenIntentSettingsIntent()) },
+                            onClick = {
+                                val intent = viewModel.callScreeningRoleIntent()
+                                if (intent != null) runCatching { callScreeningLauncher.launch(intent) }.onFailure { openActivationSettings() } else openActivationSettings()
+                            },
                             modifier = Modifier.fillMaxWidth()
-                        ) { Text("Activar alerta en pantalla completa") }
+                        ) { Text("Activar identificación de llamadas") }
                     }
+                    Text("Paso 3 — Reiniciar teléfono", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     if (uiState.activation.roleHeld && !uiState.callScreeningInvoked) {
                         Text(
-                            text = "El rol está activo, pero aún no se ha registrado una llamada real mediante CallScreeningService.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFEF6C00)
+                            "Reinicia el teléfono una vez después de activar Caller ID. En algunos Android/Google Phone, el servicio no se enlaza hasta reiniciar。",
+                            color = Color(0xFFEF6C00),
+                            style = MaterialTheme.typography.bodySmall
                         )
+                        Text("Pendiente de primera llamada real", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF6C00))
+                        Button(onClick = { safeLaunch(viewModel.openReactivationSettingsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Reactivar identificación") }
+                        Text("Si ya está activado pero no detecta llamadas, desactiva y vuelve a seleccionar Alerta Número MX como app de identificación de llamadas, luego reinicia el teléfono。", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        Text("Listo", style = MaterialTheme.typography.bodySmall, color = Color(0xFF2E7D32))
                     }
-                    Text(
-                        text = "En algunos dispositivos Pixel/Android, además del permiso de rol, debes verificar que ScamCall MX esté seleccionado como app de identificación de llamadas en Apps predeterminadas.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("Paso 4 — Llamada de prueba", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text("Haz una llamada real desde otro teléfono físico. No uses WhatsApp, LINE, VoIP ni Wi-Fi Calling。", style = MaterialTheme.typography.bodySmall)
+                    Text("Si solo aparece PHONE_STATE, Google Phone todavía no entregó la llamada a CallScreeningService。", style = MaterialTheme.typography.bodySmall)
+
+                    TextButton(onClick = { showAdvancedDiagnostics = !showAdvancedDiagnostics }) {
+                        Text(if (showAdvancedDiagnostics) "Ocultar diagnóstico avanzado" else "Diagnóstico avanzado")
+                    }
+                    if (showAdvancedDiagnostics) {
+                        Text(
+                            text = "role held by this app: ${if (uiState.activation.roleHeld) "yes" else "no"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "queryIntentServices(CallScreeningService): ${uiState.activation.queryIntentServicesCount}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "service exported: ${if (uiState.activation.serviceExported) "yes" else "no"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "component: ${uiState.activation.serviceComponentName}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "package: ${uiState.activation.packageName}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = {
+                                val ok = viewModel.refreshCallScreeningComponent()
+                                Toast.makeText(context, if (ok) "Servicio actualizado. Vuelve a seleccionar la app si Android lo solicita." else "No se pudo actualizar el servicio.", Toast.LENGTH_LONG).show()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Actualizar servicio") }
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = {
@@ -248,31 +220,8 @@ fun MainScreen(viewModel: MainViewModel) {
                                 showActivationGuide = true
                             },
                             shape = RoundedCornerShape(999.dp)
-                        ) { Text(if (uiState.activation.roleHeld) "Revisar configuración" else "Activar alertas") }
+                        ) { Text("Ver guía de activación") }
                     }
-                    if (!uiState.activation.roleHeld) {
-                        Button(
-                            onClick = {
-                                val intent = viewModel.callScreeningRoleIntent()
-                                if (intent != null) {
-                                    runCatching { callScreeningLauncher.launch(intent) }
-                                        .onFailure { openActivationSettings() }
-                                } else {
-                                    openActivationSettings()
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text("Activar identificación de llamadas") }
-                    } else {
-                        Text(
-                            text = "Call Screening role already granted",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Button(onClick = { safeLaunch(viewModel.defaultAppsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir apps predeterminadas") }
-                    Button(onClick = { safeLaunch(viewModel.phoneAppSettingsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de teléfono") }
-                    Button(onClick = { safeLaunch(viewModel.appDetailsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de la app") }
                     Button(
                         onClick = viewModel::refreshRecentCallAlertEvents,
                         modifier = Modifier.fillMaxWidth()
@@ -300,7 +249,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         )
                     }
                     Text(
-                        text = "Predeterminado: apagado. Actívalo solo si la identificación de llamadas falla en pruebas reales.",
+                        text = "Solo úsalo si la identificación de llamadas falla durante pruebas reales.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -477,7 +426,7 @@ fun MainScreen(viewModel: MainViewModel) {
     if (showActivationGuide) {
         AlertDialog(
             onDismissRequest = { showActivationGuide = false },
-            title = { Text("Activar alertas") },
+            title = { Text("Activación de llamadas") },
             text = {
                 Text(
                     "1. Permite las notificaciones para ScamCall MX.\n" +
