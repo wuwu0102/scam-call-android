@@ -44,7 +44,6 @@ data class ActivationUiState(
     val appLabel: String = "",
     val defaultDialerPackage: String = "unknown",
     val isGoogleDialerDefault: Boolean = false,
-    val roleHolders: String = "unknown",
     val queryIntentServicesCount: Int = 0,
     val roleActiveButServiceNotInvoked: Boolean = false
 )
@@ -171,13 +170,6 @@ class MainViewModel(
         val telecomManager = context.getSystemService(TelecomManager::class.java)
         val defaultDialerPackage = telecomManager?.defaultDialerPackage ?: "unknown"
         val isGoogleDialerDefault = defaultDialerPackage == "com.google.android.dialer"
-        val roleHolders = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && roleManager != null) {
-            runCatching { roleManager.getRoleHolders(RoleManager.ROLE_CALL_SCREENING).joinToString(", ") }
-                .getOrElse { "error: ${it.message}" }
-                .ifBlank { "none" }
-        } else {
-            "unavailable_pre_q"
-        }
         val roleActiveButServiceNotInvoked = roleHeld &&
             CallAlertDiagnosticsStore(context)
                 .getRecentEvents()
@@ -209,7 +201,6 @@ class MainViewModel(
             appLabel = appLabel,
             defaultDialerPackage = defaultDialerPackage,
             isGoogleDialerDefault = isGoogleDialerDefault,
-            roleHolders = roleHolders,
             queryIntentServicesCount = queriedServices.size,
             roleActiveButServiceNotInvoked = roleActiveButServiceNotInvoked
         )

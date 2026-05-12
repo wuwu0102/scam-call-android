@@ -199,11 +199,14 @@ fun MainScreen(viewModel: MainViewModel) {
                         )
                     }
                     Text(
-                        text = "role holders: ${uiState.activation.roleHolders}",
+                        text = "role available: ${if (uiState.activation.roleAvailable) "yes" else "no"}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "role held by this app: ${if (uiState.activation.roleHeld) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "queryIntentServices(CallScreeningService): ${uiState.activation.queryIntentServicesCount}",
