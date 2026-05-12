@@ -183,11 +183,23 @@ class ScamRepository {
     }
 
     fun normalizePhone(input: String): String? {
-        val digitsOnly = input.replace(Regex("[^0-9+]"), "")
-        if (digitsOnly.isBlank()) return null
-        val withoutPlus = digitsOnly.removePrefix("+")
-        val mxStripped = if (withoutPlus.startsWith("52") && withoutPlus.length > 10) withoutPlus.removePrefix("52") else withoutPlus
-        val last10 = if (mxStripped.length >= 10) mxStripped.takeLast(10) else mxStripped
-        return last10.takeIf { it.length == 10 }
+        val digitsOnly = input.filter { it.isDigit() }
+        return digitsOnly.takeIf { it.isNotBlank() }
+    }
+
+    fun lookupAliases(input: String): Set<String> {
+        val normalized = normalizePhone(input) ?: return emptySet()
+        val aliases = linkedSetOf(normalized, "+$normalized")
+        if (normalized.length == 10) {
+            aliases.add("52$normalized")
+            aliases.add("+52$normalized")
+        }
+        if (normalized.startsWith("52") && normalized.length >= 12) {
+            aliases.add(normalized.removePrefix("52"))
+        }
+        if (normalized.startsWith("886") && normalized.length >= 12) {
+            aliases.add("0${normalized.removePrefix("886")}")
+        }
+        return aliases
     }
 }

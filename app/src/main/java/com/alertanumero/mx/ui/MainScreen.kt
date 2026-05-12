@@ -390,6 +390,9 @@ fun MainScreen(viewModel: MainViewModel) {
                     Button(onClick = {
                         if (viewModel.saveLocalTestNumber()) showLocalSavedDialog = true
                     }, modifier = Modifier.fillMaxWidth()) { Text("Guardar prueba local") }
+                    Text(text = "Raw input: ${uiState.localTestRawInput.ifBlank { "-" }}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = "Normalized number: ${uiState.localTestNormalized.ifBlank { "-" }}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = "Aliases generated: ${uiState.localTestAliases.ifBlank { "-" }}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (uiState.localTestMessage.isNotBlank()) {
                         Text(text = uiState.localTestMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -436,6 +439,7 @@ fun MainScreen(viewModel: MainViewModel) {
             text = {
                 Text(
                     "El número de prueba se guardó por 24 horas en este dispositivo.\n\n" +
+                        "Número normalizado: ${uiState.localTestNormalized.ifBlank { "No disponible" }}\n\n" +
                         "No se sube ni se comparte.\n\n" +
                         "En Android, el identificador que se muestre durante una llamada puede variar según la app de Teléfono, la marca del dispositivo y los contactos guardados.\n\n" +
                         "Para probar mejor, usa un número que no esté guardado en tus contactos."

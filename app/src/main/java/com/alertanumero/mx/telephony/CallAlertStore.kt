@@ -26,15 +26,17 @@ class CallAlertStore(context: Context) {
     }
 
     fun findEntry(rawNumber: String): ScamEntry? {
-        val normalized = repository.normalizePhone(rawNumber) ?: return null
+        val aliases = repository.lookupAliases(rawNumber)
+        if (aliases.isEmpty()) return null
         val raw = prefs.getString("cached_entries_json", null) ?: return null
         val array = runCatching { JSONArray(raw) }.getOrNull() ?: return null
         for (i in 0 until array.length()) {
             val item = array.optJSONObject(i) ?: continue
-            if (item.optString("number") != normalized) continue
+            val savedNumber = item.optString("number")
+            if (savedNumber !in aliases) continue
             val category = runCatching { ScamCategory.valueOf(item.optString("category")) }.getOrDefault(ScamCategory.SUSPICIOUS)
             val label = item.optString("label").ifBlank { category.displayLabel }
-            return ScamEntry(normalized, category, label, item.optString("source"))
+            return ScamEntry(savedNumber, category, label, item.optString("source"))
         }
         return null
     }
@@ -62,8 +64,9 @@ class CallAlertStore(context: Context) {
 
     fun findLocalTestEntry(rawNumber: String): ScamEntry? {
         val normalized = repository.normalizePhone(rawNumber) ?: return null
+        val aliases = repository.lookupAliases(rawNumber)
         val local = prefs.getString("local_test_number", null) ?: return null
-        if (local != normalized) return null
+        if (local !in aliases) return null
         return ScamEntry(normalized, ScamCategory.SUSPICIOUS, "Prueba local", "local")
     }
 
