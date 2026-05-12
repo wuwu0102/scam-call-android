@@ -27,15 +27,19 @@ class AlertNotificationHelper(private val context: Context) {
     }
 
     fun showCallAlert(rawNumber: String, entry: ScamEntry) {
+        showCallAlert(rawNumber, entry, "CallScreeningService")
+    }
+
+    fun showCallAlert(rawNumber: String, entry: ScamEntry, source: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         val body = formatBody(
             rawNumber = rawNumber,
             category = entry.category.name,
             label = entry.label,
-            source = "CallScreeningService"
+            source = source
         )
 
-        val fullScreenIntent = buildOverlayPendingIntent(rawNumber, entry.label, entry.category.name, "CallScreeningService")
+        val fullScreenIntent = buildOverlayPendingIntent(rawNumber, entry.label, entry.category.name, source)
         val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Alerta de llamada")
