@@ -17,12 +17,6 @@ class IncomingCallReceiver : BroadcastReceiver() {
         val diagnosticsStore = CallAlertDiagnosticsStore(context)
         val callAlertStore = CallAlertStore(context)
 
-        if (callAlertStore.isDiagnosticNotifyAllCallsEnabled()) {
-            val helper = AlertNotificationHelper(context)
-            helper.ensureChannel()
-            helper.showDiagnosticCallSeen(incomingNumber.orEmpty(), "PHONE_STATE")
-        }
-
         if (incomingNumber.isNullOrBlank()) {
             diagnosticsStore.addEvent(
                 source = "PHONE_STATE",
@@ -45,10 +39,14 @@ class IncomingCallReceiver : BroadcastReceiver() {
             reason = if (entry != null) "matched" else "not_found"
         )
 
-        if (entry == null) return
-
-        val helper = AlertNotificationHelper(context)
-        helper.ensureChannel()
-        helper.showCallAlert(incomingNumber, entry)
+        if (entry == null && callAlertStore.isDiagnosticNotifyAllCallsEnabled()) {
+            diagnosticsStore.addEvent(
+                source = "PHONE_STATE",
+                rawNumber = incomingNumber,
+                normalizedNumber = normalizedNumber,
+                matched = false,
+                reason = "diagnostic_mode_phone_state_log_only"
+            )
+        }
     }
 }
