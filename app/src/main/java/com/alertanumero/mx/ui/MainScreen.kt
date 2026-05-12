@@ -51,8 +51,19 @@ fun MainScreen(viewModel: MainViewModel) {
     val lifecycleOwner = LocalLifecycleOwner.current
     var showActivationGuide by remember { mutableStateOf(false) }
     var showLocalSavedDialog by remember { mutableStateOf(false) }
+    var pendingRoleReEnable by remember { mutableStateOf(false) }
 
     val settingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (pendingRoleReEnable) {
+            pendingRoleReEnable = false
+            val intent = viewModel.callScreeningRoleIntent()
+            if (intent != null) {
+                runCatching { callScreeningLauncher.launch(intent) }
+                    .onFailure { viewModel.refreshActivationStatus() }
+            } else {
+                viewModel.refreshActivationStatus()
+            }
+        }
         viewModel.refreshActivationStatus()
     }
     val callScreeningLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -271,6 +282,18 @@ fun MainScreen(viewModel: MainViewModel) {
                         )
                     }
                     Button(onClick = { safeLaunch(viewModel.defaultAppsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir apps predeterminadas") }
+                    Button(
+                        onClick = {
+                            pendingRoleReEnable = true
+                            safeLaunch(viewModel.callScreeningSettingsIntent())
+                            Toast.makeText(
+                                context,
+                                "Quita el rol de identificación de llamadas y vuelve para solicitarlo de nuevo.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Reactivar identificación de llamadas") }
                     Button(onClick = { safeLaunch(viewModel.phoneAppSettingsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de teléfono") }
                     Button(onClick = { safeLaunch(viewModel.appDetailsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Abrir configuración de la app") }
                     Button(
@@ -353,6 +376,13 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (uiState.lastCallScreeningEventText == "none yet") {
                         Text(
                             text = "Aún no se ha recibido una llamada mediante CallScreeningService. Haz una llamada real desde otro teléfono después de activar el rol.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (uiState.activation.roleHeld) {
+                        Text(
+                            text = "Si reactivaste el rol, reinicia el teléfono para forzar el re-bind de CallScreeningService.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -509,3 +539,32 @@ private fun InfoCard(title: String, subtitle: String, content: @Composable Colum
         }
     }
 }
+                    Text(
+                        text = "resolveService package/name: ${uiState.activation.resolvedServicePackage}/${uiState.activation.resolvedServiceName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "resolveService permission/exported: ${uiState.activation.resolvedServicePermission} / ${if (uiState.activation.resolvedServiceExported) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "app standby bucket: ${uiState.activation.appStandbyBucket}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "battery optimization ignored: ${if (uiState.activation.batteryOptimizationIgnored) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "notification permission: ${if (uiState.activation.notificationPermissionGranted) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )

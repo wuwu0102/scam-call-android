@@ -7,8 +7,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import android.telecom.TelecomManager
+import android.app.usage.UsageStatsManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,7 +48,14 @@ data class ActivationUiState(
     val defaultDialerPackage: String = "unknown",
     val isGoogleDialerDefault: Boolean = false,
     val queryIntentServicesCount: Int = 0,
-    val roleActiveButServiceNotInvoked: Boolean = false
+    val roleActiveButServiceNotInvoked: Boolean = false,
+    val resolvedServicePackage: String = "N/A",
+    val resolvedServiceName: String = "N/A",
+    val resolvedServicePermission: String = "N/A",
+    val resolvedServiceExported: Boolean = false,
+    val appStandbyBucket: String = "unknown",
+    val batteryOptimizationIgnored: Boolean = false,
+    val notificationPermissionGranted: Boolean = false
 )
 
 data class MainUiState(
@@ -182,6 +191,23 @@ class MainViewModel(
         val telecomManager = context.getSystemService(TelecomManager::class.java)
         val defaultDialerPackage = telecomManager?.defaultDialerPackage ?: "unknown"
         val isGoogleDialerDefault = defaultDialerPackage == "com.google.android.dialer"
+        val resolvedService = context.packageManager.resolveService(serviceIntent, PackageManager.GET_META_DATA)?.serviceInfo
+        val usageStatsManager = context.getSystemService(UsageStatsManager::class.java)
+        val appStandbyBucket = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            when (usageStatsManager?.appStandbyBucket) {
+                UsageStatsManager.STANDBY_BUCKET_ACTIVE -> "active"
+                UsageStatsManager.STANDBY_BUCKET_WORKING_SET -> "working_set"
+                UsageStatsManager.STANDBY_BUCKET_FREQUENT -> "frequent"
+                UsageStatsManager.STANDBY_BUCKET_RARE -> "rare"
+                UsageStatsManager.STANDBY_BUCKET_RESTRICTED -> "restricted"
+                UsageStatsManager.STANDBY_BUCKET_EXEMPTED -> "exempted"
+                else -> "unknown"
+            }
+        } else {
+            "unsupported_pre_p"
+        }
+        val powerManager = context.getSystemService(PowerManager::class.java)
+        val batteryOptimizationIgnored = powerManager?.isIgnoringBatteryOptimizations(context.packageName) == true
         val fullScreenAlertPermissionGranted = AlertNotificationHelper(context).canUseFullScreenIntent()
         val roleActiveButServiceNotInvoked = roleHeld &&
             CallAlertDiagnosticsStore(context)
@@ -216,7 +242,14 @@ class MainViewModel(
             defaultDialerPackage = defaultDialerPackage,
             isGoogleDialerDefault = isGoogleDialerDefault,
             queryIntentServicesCount = queriedServices.size,
-            roleActiveButServiceNotInvoked = roleActiveButServiceNotInvoked
+            roleActiveButServiceNotInvoked = roleActiveButServiceNotInvoked,
+            resolvedServicePackage = resolvedService?.packageName ?: "N/A",
+            resolvedServiceName = resolvedService?.name ?: "N/A",
+            resolvedServicePermission = resolvedService?.permission ?: "N/A",
+            resolvedServiceExported = resolvedService?.exported == true,
+            appStandbyBucket = appStandbyBucket,
+            batteryOptimizationIgnored = batteryOptimizationIgnored,
+            notificationPermissionGranted = notificationGranted
         )
         _uiState.update { it.copy(activation = activationState) }
         refreshRecentCallAlertEvents()
@@ -316,6 +349,7 @@ class MainViewModel(
     fun defaultAppsIntent(): Intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
 
     fun phoneAppSettingsIntent(): Intent = Intent("android.settings.CALL_SETTINGS")
+    fun callScreeningSettingsIntent(): Intent = Intent("android.settings.CALL_SCREENING_SETTINGS")
 
     fun appDetailsIntent(): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
         data = Uri.fromParts("package", getApplication<Application>().packageName, null)
