@@ -16,6 +16,8 @@ class IncomingCallReceiver : BroadcastReceiver() {
         val normalizedNumber = ScamRepository().normalizePhone(incomingNumber.orEmpty()).orEmpty()
         val diagnosticsStore = CallAlertDiagnosticsStore(context)
         val callAlertStore = CallAlertStore(context)
+        val helper = AlertNotificationHelper(context).also { it.ensureChannel() }
+        val diagnosticNotifyAllCallsEnabled = callAlertStore.isDiagnosticNotifyAllCallsEnabled()
 
         if (incomingNumber.isNullOrBlank()) {
             diagnosticsStore.addEvent(
@@ -25,6 +27,12 @@ class IncomingCallReceiver : BroadcastReceiver() {
                 matched = false,
                 reason = "missing_EXTRA_INCOMING_NUMBER"
             )
+            if (diagnosticNotifyAllCallsEnabled) {
+                helper.showDiagnosticCallSeen(
+                    "PHONE_STATE activo, pero Android no entregó el número",
+                    "PHONE_STATE"
+                )
+            }
             return
         }
 
@@ -39,7 +47,9 @@ class IncomingCallReceiver : BroadcastReceiver() {
             reason = if (entry != null) "matched" else "not_found"
         )
 
-        if (entry == null && callAlertStore.isDiagnosticNotifyAllCallsEnabled()) {
+        if (entry != null) {
+            helper.showCallAlert(incomingNumber, entry, "PHONE_STATE")
+        } else if (diagnosticNotifyAllCallsEnabled) {
             diagnosticsStore.addEvent(
                 source = "PHONE_STATE",
                 rawNumber = incomingNumber,
@@ -47,6 +57,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
                 matched = false,
                 reason = "diagnostic_mode_phone_state_log_only"
             )
+            helper.showDiagnosticCallSeen(incomingNumber, "PHONE_STATE")
         }
     }
 }
