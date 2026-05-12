@@ -234,6 +234,35 @@ fun MainScreen(viewModel: MainViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Text(
+                        text = "resolveService package/name: ${uiState.activation.resolvedServicePackage}/${uiState.activation.resolvedServiceName}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "resolveService permission/exported: ${uiState.activation.resolvedServicePermission} / ${if (uiState.activation.resolvedServiceExported) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "app standby bucket: ${uiState.activation.appStandbyBucket}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "battery optimization ignored: ${if (uiState.activation.batteryOptimizationIgnored) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "notification permission: ${if (uiState.activation.notificationPermissionGranted) "yes" else "no"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     if (!uiState.activation.fullScreenAlertPermissionGranted) {
                         Button(
                             onClick = { safeLaunch(viewModel.fullScreenIntentSettingsIntent()) },
@@ -539,32 +568,3 @@ private fun InfoCard(title: String, subtitle: String, content: @Composable Colum
         }
     }
 }
-                    Text(
-                        text = "resolveService package/name: ${uiState.activation.resolvedServicePackage}/${uiState.activation.resolvedServiceName}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "resolveService permission/exported: ${uiState.activation.resolvedServicePermission} / ${if (uiState.activation.resolvedServiceExported) "yes" else "no"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "app standby bucket: ${uiState.activation.appStandbyBucket}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "battery optimization ignored: ${if (uiState.activation.batteryOptimizationIgnored) "yes" else "no"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "notification permission: ${if (uiState.activation.notificationPermissionGranted) "yes" else "no"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
