@@ -86,9 +86,16 @@ class AlertNotificationHelper(private val context: Context) {
         return "Número: $displayNumber\nCategoría: $category\nsource: $source"
     }
 
-    private fun titleForCategory(category: ScamCategory): String = when (category) {
-        ScamCategory.SUSPICIOUS -> "⚠️ Llamada sospechosa"
-        ScamCategory.TELEMARKETING -> "📣 Publicidad / telemarketing"
-        ScamCategory.COLLECTION -> "💰 Cobranza"
+    private fun titleForCategory(category: ScamCategory): String {
+        val label = category.displayLabel
+        val name = category.name.lowercase()
+        return when {
+            name.contains("susp") || label.contains("sospech", ignoreCase = true) -> "⚠️ Llamada sospechosa"
+            name.contains("public") || name.contains("tele") ||
+                label.contains("publicidad", ignoreCase = true) ||
+                label.contains("telemarketing", ignoreCase = true) -> "📣 Publicidad / telemarketing"
+            name.contains("cobran") || label.contains("cobranza", ignoreCase = true) -> "💰 Cobranza"
+            else -> "⚠️ Número reportado"
+        }
     }
 }
