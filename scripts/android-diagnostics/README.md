@@ -45,3 +45,9 @@ e. `./scripts/android-diagnostics/04_collect_report.sh`
 
 - `05_reset_and_rebind_hint.sh`：提供手動重新綁定提示（不做危險自動操作）。
 - `06_test_notification_intent.sh`：用 `adb` 啟動 app，方便你在 app 內手動按「Probar notificación」。
+
+## Pixel / Google Phone 補充判定
+
+- 在 Pixel / Google Phone 上，**heads-up notification** 是主要成功標準。
+- 不再要求 overlay / 浮動視窗一定要蓋在原生電話畫面上。
+- 重開機後第一通可先記錄，**第二通測試結果作為正式判定**。

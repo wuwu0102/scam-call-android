@@ -265,7 +265,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "En Pixel/Google Phone, la app usa notificaciones visibles durante la llamada porque la pantalla nativa puede cubrir la etiqueta de identificación.",
+                        text = "En Pixel/Google Phone, la pantalla nativa de llamada puede cubrir ventanas flotantes. Por eso la alerta principal se muestra como notificación visible.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -280,7 +280,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = if (uiState.lastCallScreeningEventText.isNotBlank()) "CallScreeningService detectado" else "last CallScreeningService event: ${uiState.lastCallScreeningEventText}",
+                        text = if (uiState.callScreeningInvoked) "Caller ID activo. Si no ves una ventana flotante, revisa la notificación superior." else "last CallScreeningService event: ${uiState.lastCallScreeningEventText}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
