@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.provider.Settings.canDrawOverlays
 import android.telecom.TelecomManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
@@ -79,7 +80,11 @@ data class MainUiState(
     val fallbackNumberAvailable: Boolean = false,
     val fallbackOnlyMessage: String = "",
     val recentCallEventsText: String = "",
-    val diagnosticNotifyAllCalls: Boolean = false
+    val diagnosticNotifyAllCalls: Boolean = false,
+    val advancedPhonePermission: Boolean = false,
+    val advancedCallLogPermission: Boolean = false,
+    val advancedContactsPermission: Boolean = false,
+    val advancedOverlayPermission: Boolean = false
 )
 
 class MainViewModel(
@@ -219,7 +224,11 @@ class MainViewModel(
             queryIntentServicesCount = queriedServices.size,
             roleActiveButServiceNotInvoked = roleActiveButServiceNotInvoked
         )
-        _uiState.update { it.copy(activation = activationState) }
+        _uiState.update { it.copy(activation = activationState,
+                advancedPhonePermission = phoneStateGranted,
+                advancedCallLogPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED,
+                advancedContactsPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED,
+                advancedOverlayPermission = canDrawOverlays(context)) }
         refreshRecentCallAlertEvents()
     }
 
@@ -306,6 +315,12 @@ class MainViewModel(
     fun clearDiagnosticEvents() {
         CallAlertDiagnosticsStore(getApplication()).clearEvents()
         refreshRecentCallAlertEvents()
+    }
+
+    fun overlayPermissionIntent(): Intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply { data = Uri.parse("package:${getApplication<Application>().packageName}") }
+
+    fun showTestOverlay() {
+        AlertNotificationHelper(getApplication()).showIncomingOverlay("+52 33 0000 0000", "TEST", "Prueba", "Manual test")
     }
 
     fun showTestNotification() {
