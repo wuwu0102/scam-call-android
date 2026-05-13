@@ -9,11 +9,12 @@ import com.alertanumero.mx.data.repository.ScamRepository
 
 class ScamCallScreeningService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
+        val startedAt = System.currentTimeMillis()
+        Log.i("ScamCallScreening", "onScreenCall entered")
+        var responded = false
         try {
             val isAtLeastQ = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
             val isAtLeastR = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-            val rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty()
-            val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
             val callDirectionValue = if (isAtLeastQ) {
                 callDetails.callDirection
             } else {
@@ -29,6 +30,9 @@ class ScamCallScreeningService : CallScreeningService() {
                 "ASSUMED_INCOMING_PRE_Q"
             }
             val handleScheme = callDetails.handle?.scheme.orEmpty()
+            val rawNumber = callDetails.handle?.schemeSpecificPart.orEmpty()
+            Log.i("ScamCallScreening", "rawNumber blank=${rawNumber.isBlank()} direction=$callDirection scheme=$handleScheme")
+            val normalizedNumber = ScamRepository().normalizePhone(rawNumber).orEmpty()
             val handlePresentation = if (isAtLeastR) {
                 callDetails.callerNumberVerificationStatus.toString()
             } else {
@@ -52,8 +56,11 @@ class ScamCallScreeningService : CallScreeningService() {
                 isIncoming = isIncoming
             )
 
+            Log.i("ScamCallScreening", "respondAllow elapsed=${System.currentTimeMillis() - startedAt}ms")
+            respondAllow(callDetails)
+            responded = true
+
             if (!isIncoming) {
-                respondAllow(callDetails)
                 return
             }
 
@@ -82,11 +89,14 @@ class ScamCallScreeningService : CallScreeningService() {
                     handlePresentation = handlePresentation,
                     isIncoming = isIncoming
                 )
-                respondAllow(callDetails)
                 return
             }
 
             val entry = store.findLocalTestEntry(rawNumber) ?: store.findEntry(rawNumber)
+            Log.i(
+                "ScamCallScreening",
+                "lookup finished matched=${entry != null} elapsed=${System.currentTimeMillis() - startedAt}ms"
+            )
 
             diagnosticsStore.addEvent(
                 source = "CallScreeningService",
@@ -102,13 +112,15 @@ class ScamCallScreeningService : CallScreeningService() {
             )
 
             if (entry != null) {
+                Log.i("ScamCallScreening", "showCallAlert source=CallScreeningService")
                 helper.showCallAlert(rawNumber, entry)
             }
-
-            respondAllow(callDetails)
         } catch (e: Exception) {
-            Log.e("ScamCallScreening", "onScreenCall failed", e)
-            runCatching { respondAllow(callDetails) }
+            Log.e("ScamCallScreening", "onScreenCall failed elapsed=${System.currentTimeMillis() - startedAt}ms", e)
+            if (!responded) {
+                Log.i("ScamCallScreening", "respondAllow elapsed=${System.currentTimeMillis() - startedAt}ms")
+                runCatching { respondAllow(callDetails) }
+            }
         }
     }
 

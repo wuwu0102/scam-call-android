@@ -14,9 +14,22 @@ adb devices
 
 確認裝置狀態為 `device`。
 
-## 建議測試流程
+## 正式測試流程
 
-請依序執行：
+1. 安裝 app。
+2. 啟用通知。
+3. 啟用 Caller ID / Call Screening。
+4. 關閉 Wi-Fi Calling。
+5. 重開機。
+6. 第一通可能較慢，先記錄。
+7. 第二通通常更準，作為正式結果。
+8. 用 `adb logcat` 確認是否有：
+   - `onScreenCall entered`
+   - `respondAllow`
+   - `showCallAlert`
+   - `CallScreeningServiceFilter: com.alertanumero.mx scheduled/done`
+
+## 建議腳本執行順序
 
 a. `./scripts/android-diagnostics/01_check_device.sh`
 

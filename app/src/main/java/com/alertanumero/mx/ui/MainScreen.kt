@@ -172,6 +172,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     }
                     Text("Paso 4 — Llamada de prueba", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text("Haz una llamada real desde otro teléfono físico. No uses WhatsApp, LINE, VoIP ni Wi-Fi Calling。", style = MaterialTheme.typography.bodySmall)
+                    Text("Después de reiniciar el teléfono, la primera llamada puede tardar unos segundos más en mostrar la alerta. Haz una segunda llamada de prueba para confirmar.", style = MaterialTheme.typography.bodySmall)
                     Text("Si solo aparece PHONE_STATE, Google Phone todavía no entregó la llamada a CallScreeningService。", style = MaterialTheme.typography.bodySmall)
 
                     TextButton(onClick = { showAdvancedDiagnostics = !showAdvancedDiagnostics }) {
@@ -279,7 +280,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "last CallScreeningService event: ${uiState.lastCallScreeningEventText}",
+                        text = if (uiState.lastCallScreeningEventText.isNotBlank()) "CallScreeningService detectado" else "last CallScreeningService event: ${uiState.lastCallScreeningEventText}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
@@ -305,6 +306,13 @@ fun MainScreen(viewModel: MainViewModel) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (uiState.callScreeningInvoked.not() && uiState.fallbackPhoneStateDetected) {
+                        Text(
+                            text = "Solo PHONE_STATE: Android detectó la llamada, pero no entregó número por esta ruta.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     if (uiState.fallbackOnlyMessage.isNotBlank()) {
                         Text(
                             text = uiState.fallbackOnlyMessage,
