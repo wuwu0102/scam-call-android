@@ -51,3 +51,21 @@ e. `./scripts/android-diagnostics/04_collect_report.sh`
 - 在 Pixel / Google Phone 上，**heads-up notification** 是主要成功標準。
 - 不再要求 overlay / 浮動視窗一定要蓋在原生電話畫面上。
 - 重開機後第一通可先記錄，**第二通測試結果作為正式判定**。
+
+## 新測試標準（兩層模式）
+
+1. Ideal mode
+   - `CallScreeningService` detectado
+   - 有號碼可用
+   - 可比對資料庫並顯示正式分類告警
+
+2. Compatible mode
+   - Solo `PHONE_STATE`
+   - Android 不提供號碼（`missing_EXTRA_INCOMING_NUMBER`）
+   - App 顯示 **「📞 Llamada detectada」** heads-up notification
+
+### Pixel / Google Phone 成功條件更新
+
+若 Pixel / Google Phone 只提供 `PHONE_STATE`，不再要求一直更換全新陌生門號。此情境下測試成功標準改為：
+- 來電時出現「Llamada detectada」heads-up notification
+- App 內顯示 `PHONE_STATE detected: yes`

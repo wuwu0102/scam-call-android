@@ -276,7 +276,7 @@ class MainViewModel(
             }
         }
         val fallbackOnlyMessage = if (!hasCallScreeningEvent && fallbackPhoneStateDetected) {
-            "Esto todavía no es identificación automática. Android solo informó un cambio de llamada, pero no entregó la llamada a CallScreeningService."
+            "Modo compatible activo: llamada detectada sin número."
         } else ""
         _uiState.update {
             it.copy(
@@ -311,7 +311,7 @@ class MainViewModel(
     fun showTestNotification() {
         val helper = AlertNotificationHelper(getApplication())
         helper.ensureChannel()
-        helper.showDiagnosticCallSeen("TEST", "Manual test")
+        helper.showHeadsUpTestNotification()
     }
 
     fun openReactivationSettingsIntent(): Intent {
