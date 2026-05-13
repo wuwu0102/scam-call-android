@@ -98,4 +98,10 @@ class AlertNotificationHelper(private val context: Context) {
             else -> "⚠️ Número reportado"
         }
     }
+
+    fun canUseFullScreenIntent(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
+        val manager = context.getSystemService(NotificationManager::class.java)
+        return runCatching { manager.canUseFullScreenIntent() }.getOrDefault(false)
+    }
 }
