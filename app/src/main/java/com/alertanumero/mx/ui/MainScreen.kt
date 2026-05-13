@@ -59,20 +59,29 @@ fun MainScreen(viewModel: MainViewModel) {
     val callScreeningLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.refreshActivationStatus()
     }
-
-    fun safeLaunch(intent: android.content.Intent?) {
-        if (intent == null || intent.resolveActivity(context.packageManager) == null) {
-            Toast.makeText(context, "No se pudo abrir esta configuración.", Toast.LENGTH_SHORT).show()
-            return
+    val overlaySettingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.refreshActivationStatus()
+    }
+    val advancedPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        if (!uiState.advancedOverlayPermission) {
+            val intent = viewModel.overlayPermissionIntent()
+            if (intent.resolveActivity(context.packageManager) != null) {
+                runCatching { overlaySettingsLauncher.launch(intent) }
+                    .onFailure { Toast.makeText(context, "No se pudo abrir esta configuración.", Toast.LENGTH_SHORT).show() }
+            }
         }
-        runCatching { settingsLauncher.launch(intent) }
-            .onFailure { Toast.makeText(context, "No se pudo abrir esta configuración.", Toast.LENGTH_SHORT).show() }
+        viewModel.refreshActivationStatus()
     }
 
     fun openActivationSettings() {
         val intents = viewModel.activationSettingsIntents()
-        intents.firstOrNull()?.let {
-            safeLaunch(it)
+        intents.firstOrNull()?.let { intent ->
+            if (intent.resolveActivity(context.packageManager) != null) {
+                runCatching { settingsLauncher.launch(intent) }
+                    .onFailure { Toast.makeText(context, "No se pudo abrir esta configuración.", Toast.LENGTH_SHORT).show() }
+            } else {
+                Toast.makeText(context, "No se pudo abrir esta configuración.", Toast.LENGTH_SHORT).show()
+            }
         } ?: run {
             Toast.makeText(context, "No se encontró una pantalla de configuración compatible.", Toast.LENGTH_SHORT).show()
             viewModel.refreshActivationStatus()
@@ -128,6 +137,27 @@ fun MainScreen(viewModel: MainViewModel) {
                 )
             }
 
+
+            item {
+                InfoCard(title = "Modo avanzado de identificación en tiempo real", subtitle = "Prototipo de pruebas") {
+                    Text("Este modo permite mostrar una alerta durante la llamada usando permisos avanzados. Puede variar según el modelo de Android.")
+                    Text("Permiso teléfono: ${if (uiState.advancedPhonePermission) "Listo" else "Falta"}")
+                    Text("Permiso registro de llamadas: ${if (uiState.advancedCallLogPermission) "Listo" else "Falta"}")
+                    Text("Permiso contactos: ${if (uiState.advancedContactsPermission) "Listo" else "Falta"}")
+                    Text("Permiso mostrar sobre otras apps: ${if (uiState.advancedOverlayPermission) "Listo" else "Falta"}")
+                    Button(onClick = {
+                        advancedPermissionLauncher.launch(arrayOf(
+                            android.Manifest.permission.READ_PHONE_STATE,
+                            android.Manifest.permission.READ_CALL_LOG,
+                            android.Manifest.permission.READ_CONTACTS
+                        ))
+                    }, modifier = Modifier.fillMaxWidth()) { Text("Activar modo avanzado") }
+                    Button(onClick = viewModel::showTestOverlay, modifier = Modifier.fillMaxWidth()) { Text("Probar alerta flotante") }
+                    Text("Modo oficial: Usa CallScreeningService de Android. Más seguro, pero puede no funcionar en todos los modelos.")
+                    Text("Modo avanzado: Usa permisos avanzados para mostrar una alerta flotante durante la llamada. Puede requerir activar permisos manualmente.")
+                }
+            }
+
             item {
                 InfoCard(title = "Activación de llamadas", subtitle = "Sigue estos 4 pasos") {
                     val notificationReady = uiState.activation.isActive
@@ -165,7 +195,13 @@ fun MainScreen(viewModel: MainViewModel) {
                             style = MaterialTheme.typography.bodySmall
                         )
                         Text("Pendiente de primera llamada real", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF6C00))
-                        Button(onClick = { safeLaunch(viewModel.openReactivationSettingsIntent()) }, modifier = Modifier.fillMaxWidth()) { Text("Reactivar identificación") }
+                        Button(onClick = {
+                            val intent = viewModel.openReactivationSettingsIntent()
+                            if (intent.resolveActivity(context.packageManager) != null) {
+                                runCatching { settingsLauncher.launch(intent) }
+                                    .onFailure { Toast.makeText(context, "No se pudo abrir esta configuración.", Toast.LENGTH_SHORT).show() }
+                            }
+                        }, modifier = Modifier.fillMaxWidth()) { Text("Reactivar identificación") }
                         Text("Si ya está activado pero no detecta llamadas, desactiva y vuelve a seleccionar Alerta Número MX como app de identificación de llamadas, luego reinicia el teléfono。", style = MaterialTheme.typography.bodySmall)
                     } else {
                         Text("Listo", style = MaterialTheme.typography.bodySmall, color = Color(0xFF2E7D32))
