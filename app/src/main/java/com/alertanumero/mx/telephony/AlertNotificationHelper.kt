@@ -3,12 +3,15 @@ package com.alertanumero.mx.telephony
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.alertanumero.mx.R
+import com.alertanumero.mx.MainActivity
 import com.alertanumero.mx.data.repository.ScamCategory
 import com.alertanumero.mx.data.repository.ScamEntry
 
@@ -75,6 +78,54 @@ class AlertNotificationHelper(private val context: Context) {
             .setOngoing(false)
             .setTimeoutAfter(30_000)
         NotificationManagerCompat.from(context).notify(("diag_" + source + rawNumber).hashCode(), notificationBuilder.build())
+    }
+
+    fun showFallbackIncomingCallDetected(source: String = "PHONE_STATE") {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+        val contentIntent = PendingIntent.getActivity(context, 40, intent, flags)
+        val body = "Android detectó una llamada, pero no entregó el número. Abre ScamCall MX para revisar el diagnóstico."
+
+        val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("📞 Llamada detectada")
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText("$body\nsource: $source"))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
+            .setTimeoutAfter(30_000)
+            .setContentIntent(contentIntent)
+
+        NotificationManagerCompat.from(context).notify(("fallback_call_detected_" + source).hashCode(), notificationBuilder.build())
+    }
+
+    fun showHeadsUpTestNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
+        val body = "Si ves esta notificación, los permisos de alerta están activos."
+        val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("📞 Prueba de notificación")
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
+            .setTimeoutAfter(30_000)
+        NotificationManagerCompat.from(context).notify("heads_up_test_notification".hashCode(), notificationBuilder.build())
     }
 
     fun showSuspiciousCallAlert(rawNumber: String) {

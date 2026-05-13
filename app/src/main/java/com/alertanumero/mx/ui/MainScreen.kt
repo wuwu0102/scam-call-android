@@ -174,6 +174,8 @@ fun MainScreen(viewModel: MainViewModel) {
                     Text("Haz una llamada real desde otro teléfono físico. No uses WhatsApp, LINE, VoIP ni Wi-Fi Calling。", style = MaterialTheme.typography.bodySmall)
                     Text("Después de reiniciar el teléfono, la primera llamada puede tardar unos segundos más en mostrar la alerta. Haz una segunda llamada de prueba para confirmar.", style = MaterialTheme.typography.bodySmall)
                     Text("Si solo aparece PHONE_STATE, Google Phone todavía no entregó la llamada a CallScreeningService。", style = MaterialTheme.typography.bodySmall)
+                    Text("Si tu teléfono no entrega el número, ScamCall MX mostrará una notificación de llamada detectada. No es una alerta de número sospechoso, pero confirma que el sistema está activo.", style = MaterialTheme.typography.bodySmall)
+                    Text("Si no aparece la notificación emergente, revisa que el canal de notificaciones de ScamCall MX esté en importancia alta.", style = MaterialTheme.typography.bodySmall)
 
                     TextButton(onClick = { showAdvancedDiagnostics = !showAdvancedDiagnostics }) {
                         Text(if (showAdvancedDiagnostics) "Ocultar diagnóstico avanzado" else "Diagnóstico avanzado")
@@ -292,7 +294,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "PHONE_STATE = ruta de respaldo: solo detecta que hubo llamada, no confirma identificación oficial.",
+                        text = "PHONE_STATE = modo compatible, puede no incluir número.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -308,7 +310,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     )
                     if (uiState.callScreeningInvoked.not() && uiState.fallbackPhoneStateDetected) {
                         Text(
-                            text = "Solo PHONE_STATE: Android detectó la llamada, pero no entregó número por esta ruta.",
+                            text = "Modo compatible: Android detecta llamadas, pero no entrega el número en este dispositivo. Aun así mostraremos una notificación de llamada detectada.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -336,7 +338,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     }
                     if (uiState.lastFallbackEventText.contains("missing_EXTRA_INCOMING_NUMBER")) {
                         Text(
-                            text = "Google Phone has not bound the CallScreeningService yet.",
+                            text = "Modo compatible activo: llamada detectada sin número.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

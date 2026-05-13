@@ -7,6 +7,12 @@ import android.telephony.TelephonyManager
 import com.alertanumero.mx.data.repository.ScamRepository
 
 class IncomingCallReceiver : BroadcastReceiver() {
+    companion object {
+        private const val FALLBACK_DEBOUNCE_MS = 8_000L
+        private const val PREFS_NAME = "incoming_call_receiver"
+        private const val KEY_LAST_FALLBACK_NOTIFICATION_AT = "lastFallbackNotificationAt"
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) return
         val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE)
@@ -27,6 +33,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
                 matched = false,
                 reason = "missing_EXTRA_INCOMING_NUMBER"
             )
+            maybeShowFallbackNotification(context, helper)
             if (diagnosticNotifyAllCallsEnabled) {
                 helper.showDiagnosticCallSeen(
                     "PHONE_STATE activo, pero Android no entregó el número",
@@ -59,5 +66,14 @@ class IncomingCallReceiver : BroadcastReceiver() {
             )
             helper.showDiagnosticCallSeen(incomingNumber, "PHONE_STATE")
         }
+    }
+
+    private fun maybeShowFallbackNotification(context: Context, helper: AlertNotificationHelper) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        val last = prefs.getLong(KEY_LAST_FALLBACK_NOTIFICATION_AT, 0L)
+        if (now - last < FALLBACK_DEBOUNCE_MS) return
+        prefs.edit().putLong(KEY_LAST_FALLBACK_NOTIFICATION_AT, now).apply()
+        helper.showFallbackIncomingCallDetected("PHONE_STATE")
     }
 }
