@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.alertanumero.mx.R
@@ -49,15 +48,6 @@ class AlertNotificationHelper(private val context: Context) {
         NotificationManagerCompat.from(context).notify(rawNumber.hashCode(), notificationBuilder.build())
     }
 
-    fun showIncomingOverlay(rawNumber: String, category: String, label: String, source: String) {
-        runCatching {
-            if (Settings.canDrawOverlays(context)) {
-                CallerIdOverlayActivity.start(context, rawNumber, label, category, source)
-            } else {
-                showFallbackIncomingCallDetected(source)
-            }
-        }
-    }
 
     fun showDiagnosticCallSeen(rawNumber: String, source: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return

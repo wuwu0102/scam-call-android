@@ -34,7 +34,6 @@ class IncomingCallReceiver : BroadcastReceiver() {
                 reason = "missing_EXTRA_INCOMING_NUMBER"
             )
             maybeShowFallbackNotification(context, helper)
-            helper.showIncomingOverlay("", "", "", "PHONE_STATE")
             if (diagnosticNotifyAllCallsEnabled) {
                 helper.showDiagnosticCallSeen(
                     "PHONE_STATE activo, pero Android no entregó el número",
@@ -57,10 +56,8 @@ class IncomingCallReceiver : BroadcastReceiver() {
 
         if (entry != null) {
             helper.showCallAlert(incomingNumber, entry, "PHONE_STATE")
-            helper.showIncomingOverlay(incomingNumber, entry.category.name, entry.label, "PHONE_STATE")
         } else if (diagnosticNotifyAllCallsEnabled) {
             maybeShowFallbackNotification(context, helper)
-            helper.showIncomingOverlay(incomingNumber, "DIAGNOSTIC", "Llamada detectada", "PHONE_STATE")
             diagnosticsStore.addEvent(
                 source = "PHONE_STATE",
                 rawNumber = incomingNumber,
