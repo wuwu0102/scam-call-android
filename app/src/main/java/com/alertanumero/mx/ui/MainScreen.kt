@@ -59,16 +59,6 @@ fun MainScreen(viewModel: MainViewModel) {
     val callScreeningLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.refreshActivationStatus()
     }
-    val advancedPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        if (!uiState.advancedOverlayPermission) {
-            val intent = viewModel.overlayPermissionIntent()
-            if (intent.resolveActivity(context.packageManager) != null) {
-                runCatching { overlaySettingsLauncher.launch(intent) }
-                    .onFailure { Toast.makeText(context, "No se pudo abrir esta configuración.", Toast.LENGTH_SHORT).show() }
-            }
-        }
-        viewModel.refreshActivationStatus()
-    }
 
     fun openActivationSettings() {
         val intents = viewModel.activationSettingsIntents()

@@ -6,7 +6,9 @@ import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.telecom.TelecomManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
