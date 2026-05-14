@@ -114,7 +114,6 @@ class ScamCallScreeningService : CallScreeningService() {
             if (entry != null) {
                 Log.i("ScamCallScreening", "showCallAlert source=CallScreeningService")
                 helper.showCallAlert(rawNumber, entry)
-                helper.showIncomingOverlay(rawNumber, entry.category.name, entry.label, "CallScreeningService")
             }
         } catch (e: Exception) {
             Log.e("ScamCallScreening", "onScreenCall failed elapsed=${System.currentTimeMillis() - startedAt}ms", e)
