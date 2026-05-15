@@ -13,7 +13,6 @@ import android.telecom.TelecomManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.alertanumero.mx.BuildConfig
 import com.alertanumero.mx.data.repository.FetchResult
 import com.alertanumero.mx.data.repository.ScamCategory
 import com.alertanumero.mx.data.repository.ScamEntry
@@ -469,6 +468,7 @@ class MainViewModel(
 
     private fun buildDiagnosticReport(): String {
         val context = getApplication<Application>()
+        val (versionName, versionCode) = getAppVersionInfo()
         val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(
                 context,
@@ -482,8 +482,8 @@ class MainViewModel(
         return """
         ScamCall MX - Reporte diagnóstico
         App name: ${activation.appLabel}
-        App versionName: ${BuildConfig.VERSION_NAME}
-        App versionCode: ${BuildConfig.VERSION_CODE}
+        App versionName: $versionName
+        App versionCode: $versionCode
         package name: ${activation.packageName}
         device manufacturer: ${Build.MANUFACTURER}
         device model: ${Build.MODEL}
@@ -503,6 +503,19 @@ class MainViewModel(
         ${_uiState.value.recentCallEventsText}
         timestamp: ${System.currentTimeMillis()}
         """.trimIndent()
+    }
+
+    private fun getAppVersionInfo(): Pair<String, Long> {
+        val context = getApplication<Application>()
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        val versionName = packageInfo.versionName ?: "-"
+        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.versionCode.toLong()
+        }
+        return versionName to versionCode
     }
 
 }
