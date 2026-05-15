@@ -69,6 +69,7 @@ data class MainUiState(
     val localTestNormalized: String = "",
     val localTestAliases: String = "",
     val compatibilityReport: String = "",
+    val feedbackInput: String = "",
     val activation: ActivationUiState = ActivationUiState(),
     val callScreeningInvoked: Boolean = false,
     val automaticCallAlertStatus: String = "",
@@ -109,6 +110,10 @@ class MainViewModel(
 
     fun onLocalTestNumberChanged(value: String) {
         _uiState.update { it.copy(localTestInput = value, localTestRawInput = value) }
+    }
+
+    fun onFeedbackChanged(value: String) {
+        _uiState.update { it.copy(feedbackInput = value) }
     }
 
     fun saveLocalTestNumber(): Boolean {
@@ -448,7 +453,22 @@ class MainViewModel(
     }
 
     fun generateCompatibilityReport() {
+        _uiState.update { it.copy(compatibilityReport = buildDiagnosticReport()) }
+    }
+
+    fun buildCommentWithReport(): String {
+        val comment = _uiState.value.feedbackInput.trim()
+        val commentSection = if (comment.isBlank()) {
+            "Comentario del usuario:\n(Sin comentario)"
+        } else {
+            "Comentario del usuario:\n$comment"
+        }
+        return "$commentSection\n\n${buildDiagnosticReport()}"
+    }
+
+    private fun buildDiagnosticReport(): String {
         val context = getApplication<Application>()
+        val (versionName, versionCode) = getAppVersionInfo()
         val notificationGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(
                 context,
@@ -459,34 +479,43 @@ class MainViewModel(
         val lastCallScreeningEvent = _uiState.value.lastCallScreeningEventText
         val lastPhoneStateEvent = _uiState.value.lastFallbackEventText
 
-        val report = """
-        ScamCall MX - Android diagnostic report
-        Brand: ${Build.BRAND}
-        Manufacturer: ${Build.MANUFACTURER}
-        Model: ${Build.MODEL}
-        Android version: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})
-        default dialer package: ${activation.defaultDialerPackage}
-        role held: ${if (activation.roleHeld) "yes" else "no"}
-        CallScreeningService active: ${if (activation.callScreeningActive) "yes" else "no"}
-        last CallScreeningService event: $lastCallScreeningEvent
-        last PHONE_STATE event: $lastPhoneStateEvent
-        notification permission: ${if (notificationGranted) "yes" else "no"}
-        full-screen alert permission: ${if (activation.fullScreenAlertPermissionGranted) "yes" else "no"}
-        
-        Routing notes:
-        - CallScreeningService = formal caller ID path
-        - PHONE_STATE = fallback call-state detection only (not formal caller ID success)
-        
-        Extra app status:
-        Database records: ${_uiState.value.recordCount}
-        Last update: ${_uiState.value.lastUpdated}
-        role available: ${if (activation.roleAvailable) "yes" else "no"}
+        return """
+        ScamCall MX - Reporte diagnóstico
+        App name: ${activation.appLabel}
+        App versionName: $versionName
+        App versionCode: $versionCode
+        package name: ${activation.packageName}
+        device manufacturer: ${Build.MANUFACTURER}
+        device model: ${Build.MODEL}
+        Android version: ${Build.VERSION.RELEASE}
+        SDK version: ${Build.VERSION.SDK_INT}
+        notification permission status: ${if (notificationGranted) "granted" else "not granted"}
+        CallScreening role available: ${if (activation.roleAvailable) "yes" else "no"}
+        CallScreening role held by this app: ${if (activation.roleHeld) "yes" else "no"}
         service declared: ${if (activation.serviceDeclared) "yes" else "no"}
-        service permission: ${activation.servicePermission}
-        automaticCallAlertStatus: ${_uiState.value.automaticCallAlertStatus.ifBlank { "manual lookup only on this device" }}
-    """.trimIndent()
+        service exported: ${if (activation.serviceExported) "yes" else "no"}
+        default dialer package: ${activation.defaultDialerPackage}
+        database record count: ${_uiState.value.recordCount}
+        database last updated time: ${_uiState.value.lastUpdated}
+        last CallScreeningService event: $lastCallScreeningEvent
+        last PHONE_STATE fallback event: $lastPhoneStateEvent
+        recent call diagnostic events:
+        ${_uiState.value.recentCallEventsText}
+        timestamp: ${System.currentTimeMillis()}
+        """.trimIndent()
+    }
 
-        _uiState.update { it.copy(compatibilityReport = report) }
+    private fun getAppVersionInfo(): Pair<String, Long> {
+        val context = getApplication<Application>()
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        val versionName = packageInfo.versionName ?: "-"
+        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.longVersionCode
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.versionCode.toLong()
+        }
+        return versionName to versionCode
     }
 
 }
