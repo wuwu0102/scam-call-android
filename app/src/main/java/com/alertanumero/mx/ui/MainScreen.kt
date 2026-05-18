@@ -2,6 +2,8 @@ package com.alertanumero.mx.ui
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,6 +45,11 @@ fun MainScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     var showDiagnosticReport by remember { mutableStateOf(false) }
+    val callScreeningRoleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        viewModel.refreshActivationStatus()
+    }
 
     fun copyText(value: String, message: String) {
         clipboardManager.setText(AnnotatedString(value))
@@ -94,12 +101,21 @@ fun MainScreen(viewModel: MainViewModel) {
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
+                    } else if (!uiState.activation.roleAvailable) {
+                        Text(
+                            "Este dispositivo no permite activar identificación de llamadas desde esta app.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     } else {
                         Button(
                             onClick = {
                                 val activationIntent = viewModel.callScreeningRoleIntent()
-                                    ?: viewModel.openReactivationSettingsIntent()
-                                startActivity(context, activationIntent, null)
+                                if (activationIntent != null) {
+                                    callScreeningRoleLauncher.launch(activationIntent)
+                                } else {
+                                    viewModel.refreshActivationStatus()
+                                }
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) { Text("Activar identificación") }
