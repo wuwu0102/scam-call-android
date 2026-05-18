@@ -78,6 +78,41 @@ fun MainScreen(viewModel: MainViewModel) {
             }
 
             item {
+                InfoCard(title = "Identificación de llamadas", subtitle = "Protección en tiempo real") {
+                    val callerIdEnabled = uiState.activation.callScreeningActive
+                    val estado = if (callerIdEnabled) "Activa" else "Requiere activación"
+                    Text("Estado", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(estado, style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        "Identifica llamadas sospechosas usando la base de datos local.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    if (callerIdEnabled) {
+                        Text(
+                            "Identificación activada",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    } else {
+                        Button(
+                            onClick = {
+                                val activationIntent = viewModel.callScreeningRoleIntent()
+                                    ?: viewModel.openReactivationSettingsIntent()
+                                startActivity(context, activationIntent, null)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Activar identificación") }
+                    }
+                    Text(
+                        "En algunos Android, la alerta puede aparecer como notificación durante la llamada.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            item {
                 InfoCard(title = "Buscar número", subtitle = "Con o sin 52") {
                     OutlinedTextField(value = uiState.phoneInput, onValueChange = viewModel::onPhoneChanged, label = { Text("Número") }, placeholder = { Text("Con o sin 52") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     Button(onClick = viewModel::search, modifier = Modifier.fillMaxWidth()) { Text("Buscar") }
@@ -131,12 +166,6 @@ fun MainScreen(viewModel: MainViewModel) {
                         copyText(payload, "Comentario con reporte copiado")
                     }, modifier = Modifier.fillMaxWidth()) { Text("Copiar comentario con reporte") }
                     Button(onClick = { shareText(viewModel.buildCommentWithReport()) }, modifier = Modifier.fillMaxWidth()) { Text("Compartir comentario con reporte") }
-                }
-            }
-
-            item {
-                InfoCard(title = "Nota de compatibilidad Android", subtitle = "Importante") {
-                    Text("En Android, la alerta durante llamadas depende del sistema del teléfono y de la app de llamadas. En algunos dispositivos, la alerta puede mostrarse como notificación o después de la llamada.", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
