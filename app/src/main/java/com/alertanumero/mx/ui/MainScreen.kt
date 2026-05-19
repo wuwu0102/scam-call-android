@@ -85,7 +85,7 @@ fun MainScreen(viewModel: MainViewModel) {
             }
 
             item {
-                InfoCard(title = "Identificación de llamadas", subtitle = "Protección en tiempo real") {
+                InfoCard(title = "Identificación de llamadas", subtitle = "Compatibilidad según dispositivo") {
                     val callerIdEnabled = uiState.activation.callScreeningActive
                     val estado = if (callerIdEnabled) "Activa" else "Requiere activación"
                     Text("Estado", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -121,7 +121,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         ) { Text("Activar identificación") }
                     }
                     Text(
-                        "En algunos Android, la alerta puede aparecer como notificación durante la llamada.",
+                        "Debido a las configuraciones de Android y de la app de teléfono, la alerta durante llamadas puede variar según el dispositivo. En algunos teléfonos puede mostrarse como notificación o no aparecer en tiempo real.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -160,7 +160,7 @@ fun MainScreen(viewModel: MainViewModel) {
 
             item {
                 InfoCard(title = "Comentarios y diagnóstico", subtitle = "Ayúdanos a revisar compatibilidad") {
-                    Text("Si la identificación no aparece durante llamadas, genera un reporte y envíanos tu comentario.", style = MaterialTheme.typography.bodyMedium)
+                    Text("Si la alerta no aparece durante una llamada, puedes generar un reporte para ayudarnos a mejorar la compatibilidad.", style = MaterialTheme.typography.bodyMedium)
                     Button(onClick = { viewModel.generateCompatibilityReport(); showDiagnosticReport = true }, modifier = Modifier.fillMaxWidth()) { Text("Generar reporte diagnóstico") }
                     Button(onClick = { showDiagnosticReport = true }, modifier = Modifier.fillMaxWidth()) { Text("Enviar comentario") }
 
@@ -182,6 +182,15 @@ fun MainScreen(viewModel: MainViewModel) {
                         copyText(payload, "Comentario con reporte copiado")
                     }, modifier = Modifier.fillMaxWidth()) { Text("Copiar comentario con reporte") }
                     Button(onClick = { shareText(viewModel.buildCommentWithReport()) }, modifier = Modifier.fillMaxWidth()) { Text("Compartir comentario con reporte") }
+                }
+            }
+
+            item {
+                InfoCard(title = "Nota de compatibilidad Android", subtitle = "Comportamiento según fabricante y app de teléfono") {
+                    Text(
+                        "La visualización de alertas depende de Android, permisos, rol de identificación y la app de teléfono predeterminada. La experiencia puede variar entre dispositivos.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
         }
